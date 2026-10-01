@@ -14,6 +14,7 @@ import subprocess
 import tempfile
 import tomllib
 from toml_state import merge_state
+from preferences import apply_preferences, restore_preferences
 
 from detect import audit, packages, run, version
 
@@ -114,6 +115,14 @@ def wallpaper_file(args):
 
 def render(home, host, wallpaper, sddm=False):
     home, wallpaper = Path(home), Path(wallpaper)
+    known = {"config.toml", "sddm-wallpaper-sync.toml"}
+    fragments = home / ".config/noctalia"
+    if fragments.exists():
+        extras = [p.name for p in fragments.glob("*.toml") if p.name not in known]
+        if extras:
+            raise RuntimeError("Existing Noctalia fragments need manual merge: " + ", ".join(extras))
+        if not sddm and (fragments / "sddm-wallpaper-sync.toml").exists():
+            raise RuntimeError("Existing SDDM wallpaper hook requires an explicit integration review; not silently replaced.")
     result = {}
     for family in ("hypr", "noctalia", "kitty", "uwsm", "fontconfig"):
         for source in sorted((ROOT / "config" / family).rglob("*")):
@@ -151,16 +160,17 @@ def render(home, host, wallpaper, sddm=False):
         if defaults.exists():
             parser.read_string(defaults.read_text())
         previous = parser.get("Desktop Entry", "NotShowIn", fallback="")
-        additions = {"Desktop Entry": {"Type": "Application", "Name": "KDE Connect",
-                     "Exec": "/usr/bin/kdeconnectd", "NotShowIn": previous.rstrip(";") + ";Hyprland;"}}
+        additions = {"Desktop Entry": {"NotShowIn": ";".join(dict.fromkeys([p for p in previous.split(";") if p] + ["Hyprland"])) + ";"}}
+        if not defaults.exists():
+            additions["Desktop Entry"].update({"Type": "Application", "Name": "KDE Connect", "Exec": "/usr/bin/kdeconnectd"})
         result[autostart] = ini_merge(defaults, additions)
     # Do not transplant output-specific lock widget positions or private service settings.
     relative = ".local/state/noctalia/settings.toml"
-    result[relative] = merge_state(checked_target(home, relative), {
-        "config_version": 14, "theme": {"mode": "dark", "source": "wallpaper", "wallpaper_scheme": "m3-tonal-spot"},
-        "wallpaper": {"default": {"path": str(wallpaper)}}, "lockscreen_widgets": {"enabled": False},
-        "system": {"monitor": {"enabled": False, "cpu_poll_seconds": 0, "gpu_poll_seconds": 0,
-                               "memory_poll_seconds": 0, "network_poll_seconds": 0, "disk_poll_seconds": 0}}})
+    additions = tomllib.loads((ROOT / "config/noctalia/config.toml").read_text())
+    additions["config_version"] = 14
+    additions["wallpaper"]["default"]["path"] = str(wallpaper)
+    additions["lockscreen_widgets"] = {"enabled": False}
+    result[relative] = merge_state(checked_target(home, relative), additions)
     portal = Path("/usr/share/xdg-desktop-portal/hyprland-portals.conf")
     if portal.is_file():
         result[".config/xdg-desktop-portal/hyprland-portals.conf"] = portal.read_bytes()
@@ -361,11 +371,13 @@ def main():
                 rollback(home, args.backup.resolve(), check_only=True)
             elif not (args.backup / "system-receipt.json").exists():
                 raise RuntimeError("No deployment receipt found; do not infer rollback targets.")
+            restore_preferences(args.backup.resolve(), check_only=True)
             if (args.backup / "system-receipt.json").exists():
                 prompt("Also restore recorded system-level settings, without restarting SDDM?")
                 subprocess.run(["sudo", "python3", str(ROOT / "lib/privileged.py"), "rollback", "--uid", str(os.getuid()), "--backup", str(args.backup.resolve())], check=True)
             if user_receipt:
                 rollback(home, args.backup.resolve())
+            restore_preferences(args.backup.resolve())
             return 0
         host = audit()
         private_json(report_dir / "audit.json", host)
@@ -430,6 +442,8 @@ def main():
             subprocess.run(cmd, check=True)
         stage = "user configuration deployment"
         receipt = snapshot_and_write(home, payload, backup)
+        stage = "GTK dark preferences"
+        apply_preferences(backup)
         if args.download_model:
             stage = "verified model download"
             spec = importlib.util.spec_from_file_location("model_download", ROOT / "tools/download_model.py")

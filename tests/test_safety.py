@@ -18,6 +18,7 @@ import detect
 import installer
 import privileged
 import toml_state
+import preferences
 
 
 def host():
@@ -124,6 +125,42 @@ class Deployment(unittest.TestCase):
         self.assertIn(b"eDP-7", result[".config/hypr/config/host.lua"])
         self.assertNotIn(b"0000:00:02.0", b"\n".join(result.values()))
         self.assertFalse((self.home / ".config").exists())
+
+    def test_unknown_noctalia_fragment_requires_review(self):
+        target = self.home / ".config/noctalia/private-service.toml"
+        target.parent.mkdir(parents=True)
+        target.write_text('[service]\nname="target-only"\n')
+        with self.assertRaises(RuntimeError):
+            installer.render(self.home, host(), self.home / "wallpaper.png")
+        self.assertIn("target-only", target.read_text())
+
+    def test_preference_apply_and_restore_without_real_dbus(self):
+        values = {key: "'old-value'" for key in preferences.VALUES}
+        def fake(args):
+            if args[1] == "get":
+                return 0, values[args[3]]
+            values[args[3]] = args[4]
+            return 0, ""
+        with patch.object(preferences, "run", side_effect=fake):
+            preferences.apply_preferences(self.backup)
+            self.assertEqual(values["color-scheme"], "'prefer-dark'")
+            preferences.restore_preferences(self.backup)
+            self.assertTrue(all(value == "'old-value'" for value in values.values()))
+        self.assertEqual((self.backup / "preferences.json").stat().st_mode & 0o777, 0o600)
+
+    def test_preference_later_edit_not_overwritten(self):
+        values = {key: "'old-value'" for key in preferences.VALUES}
+        def fake(args):
+            if args[1] == "get":
+                return 0, values[args[3]]
+            values[args[3]] = args[4]
+            return 0, ""
+        with patch.object(preferences, "run", side_effect=fake):
+            preferences.apply_preferences(self.backup)
+            values["color-scheme"] = "'new-owner-choice'"
+            with self.assertRaises(RuntimeError):
+                preferences.restore_preferences(self.backup)
+            self.assertEqual(values["color-scheme"], "'new-owner-choice'")
 
 
 class Detection(unittest.TestCase):

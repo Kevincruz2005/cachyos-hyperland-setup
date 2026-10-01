@@ -177,6 +177,14 @@ def package_stage(args, user, home, backup):
                                  args.allow_snapshot_hook_override)
         for name in overrides:
             (hooks / name).symlink_to("/dev/null")
+        # --hookdir may replace the default user hook directory. Preserve its other
+        # entries in the temporary directory rather than accidentally skipping them.
+        for name, source in effective.items():
+            if source.parent == Path("/etc/pacman.d/hooks") and name not in overrides:
+                if source.resolve() == Path("/dev/null"):
+                    (hooks / name).symlink_to("/dev/null")
+                else:
+                    shutil.copyfile(source, hooks / name)
         # A pre-transaction abort gate also sees removals. Names must exactly match the reviewed set.
         allowed = {name for name, _ in actual} | ({ALLOWED_REPLACEMENT} if replacement else set())
         guard = temp / "guard.py"
@@ -248,7 +256,6 @@ def sddm_stage(args, user, home, backup):
     theme = Path("/usr/share/sddm/themes/cachyos-noctalia-static")
     profile = Path("/etc/sddm.conf.d/90-cachyos-noctalia-static.conf")
     image_dir = Path("/var/lib/sddm-wallpaper-sync") / user.pw_name
-    palette = Path("/root/.local/share/color-schemes/noctalia.colors")
     for target in (theme, profile, image_dir):
         if target.exists() or target.is_symlink():
             raise RuntimeError("Existing integration needs manual merge, not overwrite: " + str(target))
@@ -281,7 +288,6 @@ def sddm_stage(args, user, home, backup):
         entry.chmod(0o755 if entry.is_dir() else 0o644)
     receipt["directories"][-1]["tree"] = directory_snapshot(theme)
     save_receipt(backup, receipt, user.pw_uid)
-    system_write(palette, (ROOT / "palettes/noctalia.colors").read_bytes(), backup, receipt, user.pw_uid)
     system_write(profile, b"[Theme]\nCurrent=cachyos-noctalia-static\n", backup, receipt, user.pw_uid)
     if args.select_sddm:
         receipt["previous_dm"] = old_dm
