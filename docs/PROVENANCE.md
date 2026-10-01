@@ -30,6 +30,10 @@ The existing dotfiles repository and its uncommitted changes are not imported.
 Publication checks cover the full Git history, not only the final working tree.
 
 The publishing helper follows the official [GitHub CLI authentication](https://cli.github.com/manual/gh_auth_login)
-and [repository creation](https://cli.github.com/manual/gh_repo_create) workflow.
+and [existing repository inspection](https://cli.github.com/manual/gh_repo_view) workflow.
 Browser authorization must finish in the initiating CLI; verify the actual identity
 with `gh api user --jq .login` before publishing. Never paste tokens into a chat.
+The owner-selected destination is the existing private
+`Kevincruz2005/cachyos-hyperland-setup` repository. Publication does not create
+another repository or change visibility. Private status does not relax the
+allowlist or privacy checks, and collaborators need explicit repository access.

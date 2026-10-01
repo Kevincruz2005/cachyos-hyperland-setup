@@ -14,8 +14,8 @@ This is a conservative version-gated adapter, not an unattended universal instal
 ## Start here
 
 ```sh
-git clone https://github.com/Kevincruz2005/cachyos-hyprland-noctalia.git
-cd cachyos-hyprland-noctalia
+git clone https://github.com/Kevincruz2005/cachyos-hyperland-setup.git
+cd cachyos-hyperland-setup
 ./setup audit
 ./setup plan
 ```
@@ -23,6 +23,7 @@ cd cachyos-hyprland-noctalia
 Read [installation](docs/INSTALL.md) before applying anything. CachyOS-first;
 other distributions and untested versions stop with an agent handoff instead
 of executing guessed package commands. Never pipe downloaded scripts into sudo.
+This repository is private: cloning requires access granted by its owner.
 
 ## What this reproduces
 
@@ -67,6 +68,7 @@ python tools/validate_export.py  # Native offline checks when binaries are insta
 ```
 
 The author can run `bash tools/publish.sh` after a successful GitHub CLI login.
-It checks the approved owner, clean history/export and tests, then creates only
-the new public repository. It refuses existing remotes/repositories and never
-force-pushes. Review the allowlist as well; automated secret scans are not a guarantee.
+It checks the approved owner, private repository, remote, clean history/export and
+tests, then pushes `main` to the existing `Kevincruz2005/cachyos-hyperland-setup`
+repository. It never creates a repository, changes visibility or force-pushes.
+Review the allowlist as well; automated secret scans are not a guarantee.
