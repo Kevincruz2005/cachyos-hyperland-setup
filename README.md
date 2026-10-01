@@ -7,6 +7,10 @@ Hyprland + Noctalia v5, UWSM, Intel desktop rendering and NVIDIA on demand.
 recovery option. This is a reproducible desktop configuration, not an image
 of someone's home directory. No credentials or private backups are included.
 
+The configuration and isolated recovery tests are validated; the privileged
+installer has **not** yet completed a disposable-CachyOS-VM end-to-end test.
+This is a conservative version-gated adapter, not an unattended universal installer.
+
 ## Start here
 
 ```sh
@@ -53,3 +57,16 @@ or session termination. Package and system-level steps require review.
 Do not interpret reference measurements as promised battery life on another
 machine. A successful configuration deployment is not a completed hardware
 validation. Start with `audit`, retain a working fallback, and test deliberately.
+
+## Development and publication
+
+```sh
+python -m unittest discover -s tests -v
+python tools/check_publication.py
+python tools/validate_export.py  # Native offline checks when binaries are installed.
+```
+
+The author can run `bash tools/publish.sh` after a successful GitHub CLI login.
+It checks the approved owner, clean history/export and tests, then creates only
+the new public repository. It refuses existing remotes/repositories and never
+force-pushes. Review the allowlist as well; automated secret scans are not a guarantee.
