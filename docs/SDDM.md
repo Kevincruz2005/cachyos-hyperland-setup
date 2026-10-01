@@ -24,7 +24,8 @@ for rollback. Reboot/login tests are always manual.
 User wallpaper sync writes only a per-user raster image, not privileged config.
 Noctalia's wallpaper_changed hook runs it once for the generated primary output.
 Atomic copy, size/MIME checks, lock and unchanged-image skip preserve the last
-valid image. Login colors are a static palette snapshot, not continuously synced.
+valid image. Login control colors retain the installed Breeze/KDE palette; only
+the wallpaper is synchronized. No root-account palette or GTK settings are changed.
 Animated formats are excluded in the portable adapter to preserve static behavior.
 
 If SDDM fails, use Ctrl+Alt+F3 and the recorded rollback commands. If only Hyprland
