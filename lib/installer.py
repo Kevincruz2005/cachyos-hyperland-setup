@@ -391,6 +391,10 @@ def main():
             print(json.dumps(results, indent=2))
             print("Hardware validation is NOT complete; follow docs/VALIDATION.md.")
             return 0 if results["hyprland_config_errors"] == (0, "") and results["dictation_off"] and results["uwsm_session_available"] else 2
+        for variable, expected in (("XDG_CONFIG_HOME", home / ".config"), ("XDG_STATE_HOME", home / ".local/state"),
+                                   ("XDG_DATA_HOME", home / ".local/share")):
+            if os.environ.get(variable) and Path(os.environ[variable]).resolve() != expected.resolve():
+                raise RuntimeError("Custom " + variable + " needs agent path adaptation; no home-default config will be written.")
         plan = package_plan(host)
         problems = blockers(host, plan["candidates"])
         plan["blockers"] = problems
@@ -419,6 +423,15 @@ def main():
         backup.mkdir(parents=True, mode=0o700)
         private_json(backup / "baseline.json", host)
         private_json(backup / "package-plan.json", plan)
+        private_json(backup / "packages-installed.json", packages())
+        for filename, command in (
+            ("packages-explicit.json", ["pacman", "-Qqe"]),
+            ("enabled-system-services.json", ["systemctl", "list-unit-files", "--state=enabled", "--no-legend", "--no-pager"]),
+            ("enabled-user-services.json", ["systemctl", "--user", "list-unit-files", "--state=enabled", "--no-legend", "--no-pager"])):
+            code, output = run(command)
+            if code:
+                raise RuntimeError("Recovery inventory could not be recorded: " + filename)
+            private_json(backup / filename, output.splitlines())
         if plan["roots"]:
             if not args.packages:
                 raise RuntimeError("Missing packages. Re-run with --packages only after reviewing the transaction.")

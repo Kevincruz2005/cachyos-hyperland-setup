@@ -64,7 +64,10 @@ If a package's `.INSTALL` script requires review, use the agent handoff; do not
 edit the guard away or substitute an AUR package blindly.
 
 User files are prevalidated, originals copied to a private timestamped backup,
-then replaced atomically. Existing INI and target-local Noctalia state are merged;
+then replaced atomically. Installed/explicit packages, enabled system/user units,
+GPU/power/display baseline and deployment receipts are recorded privately. Custom
+XDG config/state/data directory layouts require adaptation before automatic apply.
+Existing INI and target-local Noctalia state are merged;
 comments/formatting may change, but unrelated values remain in the backup and
 merge. Unknown existing Noctalia TOML fragments stop for review instead of silently
 colliding. Selected GNOME interface dark/font/icon preferences are backed up and
