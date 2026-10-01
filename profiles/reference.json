@@ -1,0 +1,15 @@
+{
+  "captured": "2026-10-01",
+  "os": "CachyOS",
+  "machine": "Dell G15 5530",
+  "cpu": "Intel Core i5-13450HX",
+  "gpus": ["Intel iGPU", "NVIDIA RTX 3050 6GB Laptop"],
+  "display": {"reference_output": "eDP-1", "width": 1920, "height": 1080, "refresh_hz": 60.012, "scale": 1.25},
+  "external": "HDMI is NVIDIA-wired; USB-C mapping needs separate validation",
+  "tested_versions": {"hyprland": "0.56.2", "noctalia": "5.2.0", "uwsm": "0.27.0"},
+  "baseline_kernel": "7.2.8-1-cachyos",
+  "baseline_nvidia": "615.71.09 open modules",
+  "gpu_policy": "natural selection; no AQ/GBM/GLX/WLR overrides",
+  "appearance": {"gaps_in": 0, "gaps_out": 0, "active_border": "black", "rounding": 10},
+  "wallpaper": {"source": "https://wallhaven.cc/w/yqg6r7", "sha256": "448fca111b8a60f2dc2298dac11b049687283ad11c672e9447f0f876aa0ba928", "bundled": false}
+}

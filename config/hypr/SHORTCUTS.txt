@@ -1,0 +1,78 @@
+HYPRLAND — EVERYDAY SHORTCUTS
+Super = Windows/logo key. Press q to close this cheat sheet.
+
+OPEN THINGS
+  Super + Space / R       Application launcher
+  Super + Enter           Kitty terminal (tiled)
+  Super + Shift + Enter   Kitty terminal (floating centered)
+  Ctrl + Alt + T          Kitty terminal (alternative)
+  Super + E               Dolphin file manager
+  Super + B / W           Brave browser
+  Super + T               Text editor
+  Calculator key          Calculator (Super + C also works)
+  Super + F1              This cheat sheet
+
+WINDOWS & WORKSPACES
+  Super + 1..9            Switch to workspace 1..9 (top number row)
+  Super + Alt + 1..9      Move active window to workspace & follow it
+  Super + Shift + 1..9    Move window to workspace silently (stay on current)
+  Super + BackSpace       Quick switch back to previously active workspace
+  Super + arrows          Focus a neighboring window
+  Super + Shift + arrows  Move a window within the layout
+  Super + Alt + arrows    Resize active window with keyboard
+  Alt + Tab               Switch to next window (no automatic maximize)
+  Alt + Shift + Tab       Switch to previous window (no automatic maximize)
+  Super + Tab             Visual window switcher (Noctalia)
+  Alt + F4 / Super + Q    Close the focused window (tiled or fullscreen)
+  Super + F               Maximize window (keeps status bar & tabs visible)
+  Super + Shift + F       True fullscreen (covers whole screen, no topbar)
+  Super + D               Show desktop / return to previous apps
+  Super + Alt + Space     Toggle floating
+  Super + Shift + Space   Center floating window
+  Super + O               Pin floating window (sticky on all workspaces)
+  Super + G               Toggle tabbed window group
+  Super + [ / ]           Switch between tabs in a group
+  Super + left drag       Move a window with mouse
+  Super + right drag      Resize a window with mouse
+  Super + S / Super + `   Show/hide scratchpad
+  Super + Alt + S         Send window to scratchpad
+
+DESKTOP
+  Super + V               Clipboard history
+  Super + H               English/Tamil dictation on/off (finishes final phrase, then fully exits)
+  Super + Shift + H       Immediately cancel dictation and kill all its workers
+  Super + Shift + S       Interactive screenshot (Drag to crop / [F] Fullscreen -> [C] Copy / [Enter] Save)
+  Print                   Interactive screenshot (alternative)
+  Super + Print           Instant fullscreen screenshot
+  Super + L               Lock screen
+  Super + A               Notifications
+  Super + X               Control center
+  Super + Z               Noctalia settings
+  Super + Alt + C         Session/power menu (asks before destructive action)
+  Super + Shift + W       Wallpaper chooser
+  Super + period          Emoji picker
+  Brightness/media keys   Brightness, volume, mute, microphone mute, playback
+
+TOUCHPAD GESTURES
+  3 fingers swipe up      Maximize active window (keeps browser tabs visible)
+  3 fingers swipe down    Restore normal size from maximized or fullscreen; never closes apps
+  3 fingers swipe left    No custom action (floating is Super + Alt + Space)
+  4 fingers horizontal    Switch workspaces
+
+TERMINAL (Kitty defaults)
+  Ctrl + Shift + C / V    Copy / paste
+  Ctrl + Shift + + / -    Increase / decrease font size
+  Ctrl + Shift + F5       Reload Kitty configuration
+
+Font: Adwaita Sans (Noctalia UI), JetBrainsMono Nerd Font 12pt with ligatures (Kitty).
+Default Terminal: Kitty (/usr/bin/kitty).
+
+DICTATION
+  Click a text field first. Super+H starts offline CPU-only speech recognition.
+  Text appears after short pauses, or roughly every 8 seconds of continuous speech.
+  Super+H stops the microphone, finishes the last phrase, and exits completely.
+  Another press while finishing / Super+Shift+H cancels immediately.
+  No startup service or idle speech listener. Silent periods do not run the model.
+  Automatic safety stop after 10 minutes; focus change/lock cancels rather than typing elsewhere.
+  Do not use in password fields or command prompts. No Enter key or clipboard insertion is generated.
+  Tiny multilingual model favors low resources over accuracy; mixed English/Tamil may need correction.

@@ -1,0 +1,202 @@
+[accessibility]
+ui_scale = 1.0
+
+[bar.default]
+center = [ "workspaces" ]
+concave_edge_corners = true
+end = [ "tray", "notifications", "network", "volume", "battery", "session" ]
+margin_edge = 0
+margin_ends = 0
+radius_bottom_left = 12
+radius_bottom_right = 12
+radius_top_left = 0
+radius_top_right = 0
+scale = 1.0
+start = [ "launcher", "clock" ]
+thickness = 35
+
+[shell]
+font_family = "Adwaita Sans"
+popup_shadows = false
+setup_wizard_enabled = false
+telemetry_enabled = false
+external_ip_enabled = false
+screen_time_enabled = false
+clipboard_image_action_command = "swash --stdin --name \"swash-$(date +'%Y-%m-%d_%H:%M:%S').png\""
+launch_apps_as_systemd_services = true
+polkit_agent = true
+settings_show_advanced = true
+
+    [shell.greeter_sync]
+    auto_sync = false
+
+    [shell.panel]
+    shadow = false
+    transparency_mode = "solid"
+    open_near_click_control_center = true
+    session_placement = "floating"
+    session_position = "center"
+
+    [shell.screenshot]
+    copy_to_clipboard = true
+    pipe_command = "swash --stdin --name \"swash-$(date +'%Y-%m-%d_%H:%M:%S').png\""
+    pipe_to_command = false
+    save_to_file = true
+
+    [[shell.session.actions]]
+    action = "lock"
+    countdown_seconds = 0.0
+    enabled = true
+    shortcut = "1"
+    variant = "default"
+
+    [[shell.session.actions]]
+    action = "logout"
+    countdown_seconds = 0.0
+    enabled = true
+    shortcut = "2"
+    variant = "default"
+
+    [[shell.session.actions]]
+    action = "lock_and_suspend"
+    countdown_seconds = 3.0
+    enabled = true
+    shortcut = "3"
+    variant = "default"
+
+    [[shell.session.actions]]
+    action = "reboot"
+    countdown_seconds = 3.0
+    enabled = true
+    shortcut = "4"
+    variant = "default"
+
+    [[shell.session.actions]]
+    action = "shutdown"
+    countdown_seconds = 3.0
+    enabled = true
+    shortcut = "5"
+    variant = "destructive"
+
+[system.monitor]
+enabled = false
+cpu_poll_seconds = 0
+gpu_poll_seconds = 0
+memory_poll_seconds = 0
+network_poll_seconds = 0
+disk_poll_seconds = 0
+
+[theme]
+mode = "dark"
+source = "wallpaper"
+builtin = "Tokyo-Night"
+wallpaper_scheme = "m3-tonal-spot"
+
+    [theme.templates]
+    builtin_ids = [ "kitty", "qt", "gtk3", "gtk4", "kcolorscheme" ]
+    enable_community_templates = false
+
+[widget.clock]
+color = "secondary"
+format = "{:%a %d %b  %H:%M}"
+
+[widget.launcher]
+color = "secondary"
+
+[widget.media]
+hide_when_no_media = true
+title_scroll = "on_hover"
+
+[widget.network]
+color = "secondary"
+
+[widget.notifications]
+color = "secondary"
+
+[widget.session]
+color = "error"
+
+[widget.spacer_1]
+type = "spacer"
+
+[widget.tray]
+capsule = true
+capsule_fill = "on_secondary"
+
+[widget.volume]
+color = "secondary"
+
+[widget.workspaces]
+active_pill_size = 2.5
+capsule = true
+capsule_fill = "on_primary"
+inactive_pill_size = 1.0
+pill_scale = 0.80
+show_labels = false
+
+[shell.animation]
+enabled = true
+speed = 1.5
+
+[shell.launcher]
+fetch_exchange_rates = false
+
+[osd.kinds]
+lock_keys = false
+
+[weather]
+enabled = false
+effects = false
+
+[calendar]
+enabled = false
+
+[desktop_widgets]
+enabled = false
+
+[dock]
+enabled = false
+
+[wallpaper]
+enabled = true
+fill_mode = "crop"
+transition = []
+transition_on_startup = false
+
+[wallpaper.default]
+path = "/usr/share/wallpapers/cachyos-wallpapers/north.png"
+
+[wallpaper.automation]
+enabled = false
+
+[lockscreen]
+enabled = true
+lock_before_suspend = true
+blurred_desktop = false
+blur_intensity = 0.0
+transition = []
+
+[idle]
+pre_action_fade_seconds = 0
+
+[idle.behavior.lock]
+timeout = 600
+action = "lock"
+enabled = true
+
+[idle.behavior.screen-off]
+timeout = 660
+action = "screen_off"
+enabled = true
+
+# Enable automatic suspend only after interactive suspend/resume validation.
+[idle.behavior.suspend]
+timeout = 900
+action = "lock_and_suspend"
+enabled = false
+
+[hooks]
+started = "bash ~/.config/noctalia/hooks/power-profile.sh"
+battery_discharging = "bash ~/.config/noctalia/hooks/power-profile.sh"
+battery_charging = "bash ~/.config/noctalia/hooks/power-profile.sh"
+battery_plugged = "bash ~/.config/noctalia/hooks/power-profile.sh"
