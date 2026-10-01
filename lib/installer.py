@@ -21,7 +21,8 @@ from detect import audit, packages, run, version
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = json.loads((ROOT / "packages.json").read_text())
 REFERENCE = json.loads((ROOT / "profiles/reference.json").read_text())
-MODEL_SHA = "818710568da3ca15689e31a743197b520007872ff9576237bda97bd1b469c3d7"
+MODEL_NAME = "ggml-tiny.en-q5_1.bin"
+MODEL_SHA = "c77c5766f1cef09b6b7d47f21b546cbddd4157886b3b5d6d4f709e91e66c7c2b"
 BREEZE_SHA = "17005cc149ce0f8283e5609df9c5650ecf9e0ffe12ba6aa1e336d96e597c26a0"
 
 
@@ -462,8 +463,8 @@ def main():
             spec = importlib.util.spec_from_file_location("model_download", ROOT / "tools/download_model.py")
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)
-            module.download(home / ".local/share/hypr-dictation/models/ggml-tiny-q5_1.bin")
-        model = home / ".local/share/hypr-dictation/models/ggml-tiny-q5_1.bin"
+            module.download(home / ".local/share/hypr-dictation/models" / MODEL_NAME)
+        model = home / ".local/share/hypr-dictation/models" / MODEL_NAME
         ready = digest(model) == MODEL_SHA
         private_json(report_dir / "result.json", {"backup": str(backup), "config_deployed": receipt["complete"], "dictation_model_ready": ready, "hardware_validated": False})
         print("Configuration deployed; no session reload/reboot performed. Backup: " + str(backup))

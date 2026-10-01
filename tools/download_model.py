@@ -6,9 +6,10 @@ from pathlib import Path
 import tempfile
 import urllib.request
 
-SHA256 = "818710568da3ca15689e31a743197b520007872ff9576237bda97bd1b469c3d7"
-URL = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny-q5_1.bin"
-SIZE = 32152673
+MODEL_NAME = "ggml-tiny.en-q5_1.bin"
+SHA256 = "c77c5766f1cef09b6b7d47f21b546cbddd4157886b3b5d6d4f709e91e66c7c2b"
+URL = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/" + MODEL_NAME
+SIZE = 32166155
 
 
 def download(destination):
@@ -47,5 +48,5 @@ def download(destination):
 
 
 if __name__ == "__main__":
-    download(Path.home() / ".local/share/hypr-dictation/models/ggml-tiny-q5_1.bin")
+    download(Path.home() / ".local/share/hypr-dictation/models" / MODEL_NAME)
     print("Verified model present; no microphone or inference process started.")

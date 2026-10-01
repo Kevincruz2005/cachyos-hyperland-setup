@@ -37,7 +37,8 @@ Suggested request:
   SDDM session launchers or an existing custom greeter silently.
 - Theme changes can collide with GTK CSS symlinks or existing Noctalia fragment
   overrides; preserve originals and inspect effective state before guessing.
-- Tiny multilingual speech has limited accuracy, especially Tamil/code-switching.
+- Current Tiny.en q5_1 speech is English-only, with limited accent/noise accuracy;
+  do not advertise automatic language detection or Tamil/code-switching support.
   Bigger models change memory/CPU tradeoffs; ask before installing one. Off-state
   must have no listener/model/unit/cgroup/recordings, not merely a hidden popup.
 

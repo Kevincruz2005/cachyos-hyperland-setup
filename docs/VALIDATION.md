@@ -64,12 +64,33 @@ is not a matched A/B benchmark.
 - [ ] No failed critical services, unexpected polling or abnormal Noctalia idle CPU.
 - [ ] If used, external monitor behavior is tested separately with known GPU wiring.
 - [ ] Matched KDE/Hyprland power samples exist before any KDE removal recommendation.
-- [ ] Real microphone and English/Tamil/code-switched dictation accuracy are accepted.
+- [ ] Real microphone and English-only dictation accuracy are accepted.
 - [ ] Super+H off-state has no dictation unit/process/cgroup/runtime recordings.
 
 `./setup verify` only gathers observable configuration/power state and prints the
 remaining manual checks. It does not trigger microphones, suspend, lock or GPU
 benchmarks. Retain KDE while any important item is uncertain.
+
+## English-only dictation update
+
+The owner subsequently chose English-only Tiny.en q5_1 with explicit language
+`en`. Three interleaved public-audio trials after warmup observed median elapsed
+time 0.59 s versus 1.05 s for the previous multilingual model, and CPU time
+1.07 s versus 1.96 s, with zero normalized word error for this sample in both.
+Peak RSS remained about 125 MiB; NVIDIA graphics/audio stayed suspended before
+and after. One thread offered essentially the same CPU time but slower results,
+so the existing two-thread limit was retained. See [DICTATION.md](DICTATION.md)
+for conditions, reproduction and limitations. This does not establish battery
+energy savings or real microphone accuracy.
+
+An isolated transient-service fixture retested the updated live English helper
+with the same production resource/stop limits, separate unit/runtime names,
+mocked focus and text injection, and no microphone. Two phrases were recognized;
+normal finalization completed in 0.59 s and emergency cancellation in 0.07 s.
+In both cases every observed test process, cgroup and runtime directory was
+gone, with MainPID 0 and the transient unit unloaded. Those timings are fixture
+observations, not guaranteed stop times; the existing 12/15-second finalization
+and manager bounds remain. Real focus/text-field/microphone checks remain manual.
 
 ## Matched A/B procedure
 

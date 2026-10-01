@@ -17,7 +17,8 @@ import wave
 
 UNIT = "hypr-dictation.service"
 SCRIPT = Path(__file__).resolve()
-MODEL = Path.home() / ".local/share/hypr-dictation/models/ggml-tiny-q5_1.bin"
+MODEL = Path.home() / ".local/share/hypr-dictation/models/ggml-tiny.en-q5_1.bin"
+LANGUAGE = "en"
 RATE, FRAME_BYTES = 16000, 3200  # 100 ms, mono signed 16-bit PCM
 FINISH_SECONDS = 12
 
@@ -177,6 +178,14 @@ def play_fixture(path):
         time.sleep(0.1)
 
 
+def recognizer_args(audio, output):
+    # Explicit English avoids language detection; preserve the existing CPU bounds.
+    return ["whisper-cli", "--no-gpu", "--threads", "2", "--language", LANGUAGE,
+            "--model", str(MODEL), "--file", str(audio), "--no-timestamps", "--no-fallback",
+            "--beam-size", "1", "--best-of", "1", "--suppress-nst", "--output-txt",
+            "--output-file", str(output)]
+
+
 def worker(fixture=None):
     target = safe_window()
     if not target:
@@ -220,7 +229,7 @@ def worker(fixture=None):
                                     stderr=subprocess.DEVNULL)
         os.set_blocking(recorder.stdout.fileno(), False)
         selector.register(recorder.stdout, selectors.EVENT_READ)
-        notify("Listening — English/Tamil. Super+H stops and finishes; another press cancels.")
+        notify("Listening — English. Super+H stops and finishes; another press cancels.")
         while True:
             now = time.monotonic()
             if now - last_check >= 1:
@@ -282,11 +291,8 @@ def worker(fixture=None):
                     audio.setframerate(RATE)
                     audio.writeframes(queue.popleft())
                 log_handle = (runtime / "recognizer.log").open("wb")
-                inference = subprocess.Popen([
-                    "whisper-cli", "--no-gpu", "--threads", "2", "--language", "auto",
-                    "--model", str(MODEL), "--file", str(runtime / "phrase.wav"),
-                    "--no-timestamps", "--no-fallback", "--beam-size", "1", "--best-of", "1",
-                    "--suppress-nst", "--output-txt", "--output-file", str(runtime / "phrase")],
+                inference = subprocess.Popen(
+                    recognizer_args(runtime / "phrase.wav", runtime / "phrase"),
                     stdout=subprocess.DEVNULL, stderr=log_handle)
                 inference_started = time.monotonic()
             if stopping:
