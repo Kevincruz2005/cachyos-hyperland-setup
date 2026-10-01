@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
+# One event, one atomic copy. No root, service, timer, renderer or GPU query.
+set -euo pipefail
+[[ $(id -u) != 0 ]] || exit 1
+target_dir="/var/lib/sddm-wallpaper-sync/$(id -un)"
+source_file=${1:-${NOCTALIA_WALLPAPER_PATH:-}}
+expected_output=${2:-}
+connector=${NOCTALIA_WALLPAPER_CONNECTOR:-$expected_output}
+[[ -n "$expected_output" && "$connector" == "$expected_output" ]] || exit 0
+[[ -n "$source_file" && -f "$source_file" && -r "$source_file" ]] || exit 1
+[[ -d "$target_dir" && ! -L "$target_dir" && -O "$target_dir" ]] || exit 1
+[[ $(stat -c %s -- "$source_file") -le 134217728 ]] || exit 1
+case $(file --brief --mime-type -- "$source_file") in
+    image/jpeg|image/png|image/webp|image/bmp|image/x-ms-bmp|image/avif) ;;
+    *) exit 1 ;;
+esac
+umask 077
+exec 9>"$target_dir/.sync.lock"
+flock -w 5 9 || exit 1
+if [[ -f "$target_dir/current" ]] && cmp -s -- "$source_file" "$target_dir/current"; then exit 0; fi
+tmp_file=$(mktemp "$target_dir/.wallpaper-XXXXXX")
+cleanup() { [[ -z "$tmp_file" || ! -f "$tmp_file" ]] || unlink -- "$tmp_file"; }
+trap cleanup EXIT
+cp -- "$source_file" "$tmp_file"
+chmod 0644 "$tmp_file"
+mv -fT -- "$tmp_file" "$target_dir/current"
+tmp_file=
