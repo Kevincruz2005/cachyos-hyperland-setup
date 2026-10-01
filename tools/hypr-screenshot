@@ -1,0 +1,521 @@
+#!/usr/bin/env python3
+"""
+Interactive Screenshot Tool for Hyprland
+- Crop mode: Click & drag to select region, or press 'F' for Fullscreen, or 'Esc' to cancel.
+- Decision mode: Press 'C' to copy to clipboard, 'Enter' to save to ~/Pictures/Screenshots, or 'Esc' to discard.
+"""
+
+import os
+import sys
+
+# Ensure GTK4 Layer Shell library is preloaded before libwayland
+if "libgtk4-layer-shell.so" not in os.environ.get("LD_PRELOAD", ""):
+    layer_lib = "/usr/lib/libgtk4-layer-shell.so"
+    if os.path.exists(layer_lib):
+        os.environ["LD_PRELOAD"] = f"{layer_lib} " + os.environ.get("LD_PRELOAD", "")
+        os.execv(sys.executable, [sys.executable] + sys.argv)
+
+import shutil
+import json
+import tempfile
+import subprocess
+from math import floor, ceil
+from datetime import datetime
+
+import gi
+gi.require_version("Gtk", "4.0")
+gi.require_version("Gdk", "4.0")
+gi.require_version("Gtk4LayerShell", "1.0")
+gi.require_version("GdkPixbuf", "2.0")
+from gi.repository import Gtk, Gdk, Gtk4LayerShell, GdkPixbuf, GLib
+import cairo
+
+def logical_to_image_rect(x, y, w, h, image_w, image_h, view_w, view_h):
+    """Convert GTK logical selection edges to bounded original-image pixels."""
+    sx = image_w / max(view_w, 1)
+    sy = image_h / max(view_h, 1)
+    left = max(0, min(image_w, floor(x * sx)))
+    top = max(0, min(image_h, floor(y * sy)))
+    right = max(left, min(image_w, ceil((x + w) * sx)))
+    bottom = max(top, min(image_h, ceil((y + h) * sy)))
+    return left, top, right - left, bottom - top
+
+class ScreenshotApp:
+    def __init__(self, gtk_app):
+        self.app = gtk_app
+        # Original pixel conversion was tested on a single output. Reject a
+        # multi-output layout instead of silently mapping the wrong screen.
+        try:
+            result = subprocess.run(["hyprctl", "-j", "monitors"], capture_output=True,
+                                    text=True, timeout=3, check=True)
+            if len(json.loads(result.stdout)) != 1:
+                raise RuntimeError("Single-output screenshot tool: use Noctalia's native screenshot UI for multiple outputs. See docs/AGENT_HANDOFF.md for adaptation.")
+        except (subprocess.SubprocessError, ValueError, RuntimeError) as error:
+            self.notify("Screenshot compatibility", str(error))
+            sys.exit(2)
+        self.tmp_dir = tempfile.mkdtemp(prefix="hypr_snip_")
+        self.full_png = os.path.join(self.tmp_dir, "screen.png")
+        self.cropped_png = os.path.join(self.tmp_dir, "cropped.png")
+
+        # Capture the screen immediately to freeze state
+        try:
+            subprocess.run(["grim", self.full_png], check=True)
+            self.full_surface = cairo.ImageSurface.create_from_png(self.full_png)
+            self.screen_w = self.full_surface.get_width()
+            self.screen_h = self.full_surface.get_height()
+        except Exception as e:
+            self.notify("Screenshot Error", f"Failed to capture screen: {e}")
+            self.cleanup()
+            sys.exit(1)
+
+        # State tracking
+        self.phase = "CROP"  # "CROP" or "DECIDE"
+        self.dragging = False
+        self.start_x = 0
+        self.start_y = 0
+        self.cur_x = 0
+        self.cur_y = 0
+        self.crop_x = 0
+        self.crop_y = 0
+        self.crop_w = 0
+        self.crop_h = 0
+
+        # Build UI
+        self.setup_window()
+
+    def setup_window(self):
+        self.win = Gtk.ApplicationWindow(application=self.app)
+        
+        # Configure LayerShell
+        Gtk4LayerShell.init_for_window(self.win)
+        Gtk4LayerShell.set_layer(self.win, Gtk4LayerShell.Layer.OVERLAY)
+        # Cover the bar too, without reserving desktop space for this overlay.
+        Gtk4LayerShell.set_exclusive_zone(self.win, -1)
+        Gtk4LayerShell.set_keyboard_mode(self.win, Gtk4LayerShell.KeyboardMode.EXCLUSIVE)
+        for edge in [Gtk4LayerShell.Edge.TOP, Gtk4LayerShell.Edge.BOTTOM,
+                     Gtk4LayerShell.Edge.LEFT, Gtk4LayerShell.Edge.RIGHT]:
+            Gtk4LayerShell.set_anchor(self.win, edge, True)
+
+        # Apply CSS styling
+        self.apply_css()
+
+        # Overlay container
+        self.overlay = Gtk.Overlay()
+        self.win.set_child(self.overlay)
+
+        # Drawing Area for background & crop box
+        self.drawing_area = Gtk.DrawingArea()
+        self.drawing_area.set_draw_func(self.on_draw)
+        self.overlay.set_child(self.drawing_area)
+
+        # Mouse Drag gesture
+        drag = Gtk.GestureDrag.new()
+        drag.connect("drag-begin", self.on_drag_begin)
+        drag.connect("drag-update", self.on_drag_update)
+        drag.connect("drag-end", self.on_drag_end)
+        self.drawing_area.add_controller(drag)
+
+        # Keyboard controller
+        key_ctrl = Gtk.EventControllerKey.new()
+        key_ctrl.connect("key-pressed", self.on_key_pressed)
+        self.win.add_controller(key_ctrl)
+
+        # Set crosshair cursor
+        cursor = Gdk.Cursor.new_from_name("crosshair", None)
+        self.win.set_cursor(cursor)
+
+        self.win.present()
+
+    def apply_css(self):
+        css = b"""
+        .decision-card {
+            background-color: rgba(22, 24, 34, 0.95);
+            border: 2px solid #7aa2f7;
+            border-radius: 16px;
+            padding: 24px 28px;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8);
+        }
+        .decision-title {
+            font-size: 19px;
+            font-weight: 800;
+            color: #c0caf5;
+            margin-bottom: 2px;
+        }
+        .decision-sub {
+            font-size: 13px;
+            color: #7982a9;
+            margin-bottom: 14px;
+        }
+        .preview-box {
+            border: 1px solid rgba(122, 162, 247, 0.3);
+            border-radius: 10px;
+            background-color: #101417;
+            padding: 4px;
+            margin-bottom: 18px;
+        }
+        .btn-copy {
+            background: linear-gradient(135deg, #3d59a1, #4872c0);
+            color: #ffffff;
+            font-size: 13px;
+            font-weight: bold;
+            border-radius: 10px;
+            padding: 10px 18px;
+            border: none;
+        }
+        .btn-copy:hover {
+            background: linear-gradient(135deg, #4872c0, #5a87db);
+        }
+        .btn-save {
+            background: linear-gradient(135deg, #7aa2f7, #89b4fa);
+            color: #1a1b26;
+            font-size: 13px;
+            font-weight: bold;
+            border-radius: 10px;
+            padding: 10px 18px;
+            border: none;
+        }
+        .btn-save:hover {
+            background: linear-gradient(135deg, #89b4fa, #a6c8ff);
+        }
+        .btn-cancel {
+            background-color: rgba(255, 255, 255, 0.08);
+            color: #a9b1d6;
+            font-size: 13px;
+            border-radius: 10px;
+            padding: 10px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+        .btn-cancel:hover {
+            background-color: rgba(255, 255, 255, 0.16);
+            color: #ffffff;
+        }
+        """
+        provider = Gtk.CssProvider()
+        provider.load_from_data(css)
+        Gtk.StyleContext.add_provider_for_display(
+            Gdk.Display.get_default(), provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        )
+
+    def paint_capture(self, cr, width, height):
+        # Cairo image pixels are not GTK logical coordinates. Fit to the actual
+        # allocation, not the integer GTK scale factor (which rounds 1.25 to 2).
+        cr.save()
+        cr.scale(width / self.screen_w, height / self.screen_h)
+        cr.set_source_surface(self.full_surface, 0, 0)
+        cr.paint()
+        cr.restore()
+
+    def on_draw(self, area, cr, width, height):
+        if width <= 0 or height <= 0:
+            return
+        # 1. Base full screen capture, fitted to the entire logical overlay.
+        self.paint_capture(cr, width, height)
+
+        # 2. Dim overlay
+        cr.set_source_rgba(0, 0, 0, 0.45)
+        cr.paint()
+
+        if self.phase == "CROP":
+            # 3. Top helper pill banner
+            banner_w = 520
+            banner_h = 42
+            banner_x = (width - banner_w) / 2
+            banner_y = 35
+
+            # Rounded pill background
+            self.draw_rounded_rect(cr, banner_x, banner_y, banner_w, banner_h, 21)
+            cr.set_source_rgba(0.08, 0.09, 0.13, 0.92)
+            cr.fill_preserve()
+            cr.set_source_rgba(0.48, 0.64, 0.97, 0.75)
+            cr.set_line_width(1.5)
+            cr.stroke()
+
+            # Banner text
+            cr.select_font_face("JetBrainsMono Nerd Font", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_BOLD)
+            cr.set_font_size(13.5)
+            cr.set_source_rgb(0.9, 0.93, 1.0)
+            text = "✂  Drag to Crop   •   [F] Fullscreen   •   [Esc] Cancel"
+            ext = cr.text_extents(text)
+            cr.move_to(banner_x + (banner_w - ext.width) / 2, banner_y + (banner_h + ext.height) / 2 - 2)
+            cr.show_text(text)
+
+            # 4. If dragging, highlight active crop box
+            if self.dragging:
+                rx = min(self.start_x, self.cur_x)
+                ry = min(self.start_y, self.cur_y)
+                rw = abs(self.cur_x - self.start_x)
+                rh = abs(self.cur_y - self.start_y)
+
+                if rw > 0 and rh > 0:
+                    # Clip and paint clear un-tinted screen inside selection
+                    cr.save()
+                    cr.rectangle(rx, ry, rw, rh)
+                    cr.clip()
+                    self.paint_capture(cr, width, height)
+                    cr.restore()
+
+                    # Selection border
+                    cr.set_source_rgb(0.48, 0.64, 0.97)  # #7aa2f7
+                    cr.set_line_width(2.0)
+                    cr.rectangle(rx, ry, rw, rh)
+                    cr.stroke()
+
+                    # Dimension badge
+                    _, _, pixel_w, pixel_h = logical_to_image_rect(
+                        rx, ry, rw, rh, self.screen_w, self.screen_h, width, height
+                    )
+                    dim_text = f"{pixel_w} × {pixel_h}"
+                    cr.set_font_size(12)
+                    dim_ext = cr.text_extents(dim_text)
+                    badge_w = dim_ext.width + 16
+                    badge_h = 22
+                    badge_x = rx + 8
+                    badge_y = ry - 28 if ry > 35 else ry + rh + 8
+                    self.draw_rounded_rect(cr, badge_x, badge_y, badge_w, badge_h, 6)
+                    cr.set_source_rgba(0.08, 0.09, 0.13, 0.9)
+                    cr.fill()
+                    cr.set_source_rgb(0.8, 0.9, 1.0)
+                    cr.move_to(badge_x + 8, badge_y + 15)
+                    cr.show_text(dim_text)
+
+        elif self.phase == "DECIDE":
+            # Highlight selected cropped area in the background
+            if self.crop_w > 0 and self.crop_h > 0:
+                # Stored crop bounds are original pixels; the overlay is logical.
+                rx = self.crop_x * width / self.screen_w
+                ry = self.crop_y * height / self.screen_h
+                rw = self.crop_w * width / self.screen_w
+                rh = self.crop_h * height / self.screen_h
+                cr.save()
+                cr.rectangle(rx, ry, rw, rh)
+                cr.clip()
+                self.paint_capture(cr, width, height)
+                cr.restore()
+
+                cr.set_source_rgb(0.48, 0.64, 0.97)
+                cr.set_line_width(2.0)
+                cr.rectangle(rx, ry, rw, rh)
+                cr.stroke()
+
+    def draw_rounded_rect(self, cr, x, y, w, h, r):
+        cr.new_sub_path()
+        cr.arc(x + w - r, y + r, r, -1.57079632679, 0)
+        cr.arc(x + w - r, y + h - r, r, 0, 1.57079632679)
+        cr.arc(x + r, y + h - r, r, 1.57079632679, 3.14159265359)
+        cr.arc(x + r, y + r, r, 3.14159265359, 4.71238898038)
+        cr.close_path()
+
+    def on_drag_begin(self, gesture, x, y):
+        if self.phase != "CROP":
+            return
+        self.dragging = True
+        self.start_x = x
+        self.start_y = y
+        self.cur_x = x
+        self.cur_y = y
+        self.drawing_area.queue_draw()
+
+    def on_drag_update(self, gesture, offset_x, offset_y):
+        if self.phase != "CROP" or not self.dragging:
+            return
+        self.cur_x = self.start_x + offset_x
+        self.cur_y = self.start_y + offset_y
+        self.drawing_area.queue_draw()
+
+    def on_drag_end(self, gesture, offset_x, offset_y):
+        if self.phase != "CROP" or not self.dragging:
+            return
+        self.dragging = False
+        self.cur_x = self.start_x + offset_x
+        self.cur_y = self.start_y + offset_y
+
+        rx = min(self.start_x, self.cur_x)
+        ry = min(self.start_y, self.cur_y)
+        rw = abs(self.cur_x - self.start_x)
+        rh = abs(self.cur_y - self.start_y)
+
+        # Ignore tiny accidental clicks (< 10px)
+        if rw >= 10 and rh >= 10:
+            bounds = logical_to_image_rect(
+                rx, ry, rw, rh, self.screen_w, self.screen_h,
+                self.drawing_area.get_width(), self.drawing_area.get_height()
+            )
+            if bounds[2] > 0 and bounds[3] > 0:
+                self.finalize_crop(*bounds)
+            else:
+                self.drawing_area.queue_draw()
+        else:
+            self.drawing_area.queue_draw()
+
+    def select_fullscreen(self):
+        self.finalize_crop(0, 0, self.screen_w, self.screen_h)
+
+    def finalize_crop(self, x, y, w, h):
+        self.crop_x = x
+        self.crop_y = y
+        self.crop_w = w
+        self.crop_h = h
+        self.phase = "DECIDE"
+
+        # Create cropped image file
+        cropped_surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, w, h)
+        cr = cairo.Context(cropped_surf)
+        cr.set_source_surface(self.full_surface, -x, -y)
+        cr.paint()
+        cropped_surf.write_to_png(self.cropped_png)
+
+        # Restore default cursor
+        self.win.set_cursor(None)
+        self.drawing_area.queue_draw()
+
+        # Show Decision Card UI
+        self.show_decision_card()
+
+    def show_decision_card(self):
+        card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        card.add_css_class("decision-card")
+        card.set_halign(Gtk.Align.CENTER)
+        card.set_valign(Gtk.Align.CENTER)
+
+        # Title
+        title_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+        title = Gtk.Label(label="📸 Screenshot Captured")
+        title.add_css_class("decision-title")
+        title.set_halign(Gtk.Align.START)
+        title_box.append(title)
+
+        sub = Gtk.Label(label=f"Area: {self.crop_w} × {self.crop_h} px")
+        sub.add_css_class("decision-sub")
+        sub.set_halign(Gtk.Align.START)
+        title_box.append(sub)
+        card.append(title_box)
+
+        # Image preview
+        preview_container = Gtk.Box()
+        preview_container.add_css_class("preview-box")
+        preview_container.set_halign(Gtk.Align.CENTER)
+
+        picture = Gtk.Picture.new_for_filename(self.cropped_png)
+        picture.set_can_shrink(True)
+        picture.set_content_fit(Gtk.ContentFit.CONTAIN)
+
+        # Limit preview dimensions
+        max_prev_w = 440
+        max_prev_h = 240
+        aspect = self.crop_w / max(self.crop_h, 1)
+        if aspect >= (max_prev_w / max_prev_h):
+            prev_w = min(self.crop_w, max_prev_w)
+            prev_h = int(prev_w / aspect)
+        else:
+            prev_h = min(self.crop_h, max_prev_h)
+            prev_w = int(prev_h * aspect)
+
+        picture.set_size_request(max(prev_w, 160), max(prev_h, 90))
+        preview_container.append(picture)
+        card.append(preview_container)
+
+        # Action Buttons
+        btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        btn_box.set_halign(Gtk.Align.CENTER)
+
+        btn_copy = Gtk.Button(label="📋  [C] Copy")
+        btn_copy.add_css_class("btn-copy")
+        btn_copy.connect("clicked", lambda _: self.action_copy())
+        btn_box.append(btn_copy)
+
+        btn_save = Gtk.Button(label="💾  [Enter] Save")
+        btn_save.add_css_class("btn-save")
+        btn_save.connect("clicked", lambda _: self.action_save())
+        btn_box.append(btn_save)
+
+        btn_cancel = Gtk.Button(label="✕  [Esc] Cancel")
+        btn_cancel.add_css_class("btn-cancel")
+        btn_cancel.connect("clicked", lambda _: self.action_cancel())
+        btn_box.append(btn_cancel)
+
+        card.append(btn_box)
+        self.overlay.add_overlay(card)
+
+    def on_key_pressed(self, controller, keyval, keycode, state):
+        if self.phase == "CROP":
+            # 'f' or 'F' captures full screen
+            if keyval in (Gdk.KEY_f, Gdk.KEY_F):
+                self.select_fullscreen()
+                return True
+            elif keyval == Gdk.KEY_Escape:
+                self.action_cancel()
+                return True
+
+        elif self.phase == "DECIDE":
+            # 'c' or 'C' copies to clipboard
+            if keyval in (Gdk.KEY_c, Gdk.KEY_C):
+                self.action_copy()
+                return True
+            # 'Enter' / 'Return' / NumPad Enter saves to file
+            elif keyval in (Gdk.KEY_Return, Gdk.KEY_KP_Enter):
+                self.action_save()
+                return True
+            elif keyval == Gdk.KEY_Escape:
+                self.action_cancel()
+                return True
+
+        return False
+
+    def action_copy(self):
+        try:
+            with open(self.cropped_png, "rb") as f:
+                subprocess.run(["wl-copy", "--type", "image/png"], stdin=f, check=True)
+            self.notify("Screenshot Copied", f"Copied {self.crop_w}×{self.crop_h} screenshot to clipboard.")
+        except Exception as e:
+            self.notify("Copy Failed", str(e))
+        self.cleanup_and_quit()
+
+    def action_save(self):
+        try:
+            save_dir = os.path.expanduser("~/Pictures/Screenshots")
+            os.makedirs(save_dir, exist_ok=True)
+            filename = f"Screenshot_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png"
+            dest = os.path.join(save_dir, filename)
+            shutil.copy(self.cropped_png, dest)
+
+            # Also copy to clipboard for convenience
+            with open(dest, "rb") as f:
+                subprocess.run(["wl-copy", "--type", "image/png"], stdin=f, check=True)
+
+            self.notify("Screenshot Saved", f"Saved to Pictures/Screenshots/{filename}\nand copied to clipboard.")
+        except Exception as e:
+            self.notify("Save Failed", str(e))
+        self.cleanup_and_quit()
+
+    def action_cancel(self):
+        self.cleanup_and_quit()
+
+    def notify(self, title, msg):
+        try:
+            subprocess.run([
+                "notify-send",
+                "-a", "Screenshot",
+                "-i", self.cropped_png if os.path.exists(self.cropped_png) else "camera-photo",
+                title, msg
+            ], check=False)
+        except Exception:
+            pass
+
+    def cleanup(self):
+        if hasattr(self, "tmp_dir") and os.path.exists(self.tmp_dir):
+            shutil.rmtree(self.tmp_dir, ignore_errors=True)
+
+    def cleanup_and_quit(self):
+        self.cleanup()
+        if hasattr(self, "win"):
+            self.win.close()
+        self.app.quit()
+
+
+def main():
+    app = Gtk.Application(application_id="org.cachyos.hyprsnip")
+    app.connect("activate", lambda a: ScreenshotApp(a))
+    app.run([])
+
+if __name__ == "__main__":
+    main()

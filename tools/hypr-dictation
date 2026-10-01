@@ -1,0 +1,351 @@
+#!/usr/bin/python
+"""Shortcut-only, phrase-streaming dictation. No installed/enabled service."""
+import argparse
+import array
+import collections
+import fcntl
+import json
+import math
+import os
+from pathlib import Path
+import selectors
+import signal
+import subprocess
+import sys
+import time
+import wave
+
+UNIT = "hypr-dictation.service"
+SCRIPT = Path(__file__).resolve()
+MODEL = Path.home() / ".local/share/hypr-dictation/models/ggml-tiny-q5_1.bin"
+RATE, FRAME_BYTES = 16000, 3200  # 100 ms, mono signed 16-bit PCM
+FINISH_SECONDS = 12
+
+
+def command(args, **kwargs):
+    return subprocess.run(args, timeout=kwargs.pop("timeout", 3), **kwargs)
+
+
+def notify(message):
+    try:
+        command(["notify-send", "--app-name=Dictation", "--expire-time=2500",
+                 "Dictation", message], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except (OSError, subprocess.TimeoutExpired):
+        pass
+
+
+def unit_state():
+    result = command(["systemctl", "--user", "show", UNIT, "--property=ActiveState", "--value"],
+                     capture_output=True, text=True)
+    return result.stdout.strip() if result.returncode == 0 else "inactive"
+
+
+def cancel_unit():
+    # Scoped to this one cgroup: never pkill other models, audio services or apps.
+    command(["systemctl", "--user", "kill", "--kill-whom=all", "--signal=SIGKILL", UNIT],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    command(["systemctl", "--user", "stop", UNIT], timeout=20,
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
+def safe_window():
+    """Fail closed when locked, shell unavailable, or no regular input window."""
+    try:
+        shell = command(["noctalia", "msg", "status"], capture_output=True, text=True)
+        if shell.returncode or json.loads(shell.stdout).get("locked") is not False:
+            return ""
+        result = command(["hyprctl", "-j", "activewindow"], capture_output=True, text=True)
+        window = json.loads(result.stdout)
+        if result.returncode or not window.get("mapped") or not window.get("acceptsInput"):
+            return ""
+        return window.get("address", "")
+    except (OSError, ValueError, subprocess.TimeoutExpired):
+        return ""
+
+
+def toggle(fixture=None):
+    runtime = Path(os.environ["XDG_RUNTIME_DIR"])
+    with (runtime / "hypr-dictation-toggle.lock").open("a") as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            # A further press while finishing cancels immediately, never starts twice.
+            cancel_unit()
+            notify("Canceled; all dictation workers stopped.")
+            return
+        state = unit_state()
+        if state in ("active", "activating", "deactivating", "reloading"):
+            if state == "deactivating":
+                cancel_unit()
+            else:
+                command(["systemctl", "--user", "stop", UNIT], timeout=20, check=True)
+            if unit_state() in ("inactive", "failed"):
+                notify("Off; microphone and dictation workers stopped.")
+            else:
+                cancel_unit()
+                raise RuntimeError("Dictation did not stop normally; forced cleanup was requested.")
+            return
+        if not MODEL.is_file():
+            raise RuntimeError("Verified speech model is missing.")
+        if not safe_window():
+            raise RuntimeError("Unlock and focus an application text field first.")
+        args = ["systemd-run", "--user", "--collect", "--quiet", "--service-type=exec",
+                "--unit=" + UNIT, "--description=On-demand CPU dictation",
+                "--property=KillMode=mixed", "--property=SendSIGKILL=yes",
+                "--property=TimeoutStopSec=15s", "--property=RuntimeMaxSec=10min",
+                "--property=Restart=no", "--property=CPUQuota=150%",
+                "--property=MemoryMax=384M", "--property=MemorySwapMax=0",
+                "--property=TasksMax=32", "--property=Nice=10",
+                "--property=UMask=0077", "--property=LimitCORE=0",
+                "--property=NoNewPrivileges=yes", "--property=OOMPolicy=stop",
+                "--property=RuntimeDirectory=hypr-dictation",
+                "--property=RuntimeDirectoryMode=0700",
+                "--property=BindsTo=graphical-session.target",
+                "--property=After=graphical-session.target"]
+        for name in ("WAYLAND_DISPLAY", "HYPRLAND_INSTANCE_SIGNATURE", "XDG_SESSION_ID"):
+            if name in os.environ:
+                args.append("--setenv=" + name + "=" + os.environ[name])
+        args += [str(SCRIPT), "--worker"]
+        if fixture:
+            args += ["--audio-fixture", str(Path(fixture).resolve())]
+        command(args, timeout=8, check=True)
+
+
+class Segmenter:
+    """Cheap energy gate; no neural model runs for silence.
+
+    This is not a sophisticated noise-canceling VAD. Minimum voiced duration
+    rejects clicks; 700 ms pauses end phrases; continuous speech splits at 8 s.
+    """
+    def __init__(self):
+        self.preroll = collections.deque(maxlen=2)
+        self.frames = []
+        self.voiced = 0
+        self.quiet = 0
+
+    def feed(self, pcm):
+        samples = array.array("h", pcm)
+        if sys.byteorder != "little":
+            samples.byteswap()
+        rms = math.sqrt(sum(sample * sample for sample in samples) / max(1, len(samples)))
+        speech = rms >= 220
+        if not self.frames:
+            if not speech:
+                self.preroll.append(pcm)
+                return None
+            self.frames.extend(self.preroll)
+            self.preroll.clear()
+        self.frames.append(pcm)
+        self.voiced += int(speech)
+        self.quiet = 0 if speech else self.quiet + 1
+        if self.quiet >= 7 or len(self.frames) >= 80:
+            return self.flush()
+        return None
+
+    def flush(self):
+        result = b"".join(self.frames) if self.voiced >= 3 else None
+        self.frames.clear()
+        self.preroll.clear()
+        self.voiced = self.quiet = 0
+        return result
+
+
+def terminate(process):
+    if process is None:
+        return
+    if process.poll() is None:
+        process.terminate()
+        try:
+            process.wait(timeout=0.3)
+        except subprocess.TimeoutExpired:
+            process.kill()
+    process.wait(timeout=1)
+
+
+def play_fixture(path):
+    # Developer test path: public sample only; never reads the real microphone.
+    with wave.open(str(path), "rb") as source:
+        if (source.getframerate(), source.getnchannels(), source.getsampwidth()) != (RATE, 1, 2):
+            raise ValueError("Fixture must be 16 kHz mono PCM16 WAV.")
+        while frame := source.readframes(RATE // 10):
+            sys.stdout.buffer.write(frame)
+            sys.stdout.buffer.flush()
+            time.sleep(0.1)
+    while True:
+        sys.stdout.buffer.write(bytes(FRAME_BYTES))
+        sys.stdout.buffer.flush()
+        time.sleep(0.1)
+
+
+def worker(fixture=None):
+    target = safe_window()
+    if not target:
+        raise RuntimeError("No unlocked application is focused.")
+    runtime = Path(os.environ["RUNTIME_DIRECTORY"])
+    selector = selectors.DefaultSelector()
+    recorder = inference = None
+    log_handle = None
+    stopping = canceled = False
+    stop_deadline = None
+    queue = collections.deque()
+    segmenter = Segmenter()
+    pending = bytearray()
+    inference_started = 0
+    last_check = 0
+    problem = None
+
+    def stop_signal(signum, _frame):
+        nonlocal stopping, canceled
+        stopping = True
+        canceled |= signum in (signal.SIGINT, signal.SIGUSR1)
+        # Stop the microphone immediately, not after recognition has completed.
+        if recorder is not None and recorder.poll() is None:
+            recorder.terminate()
+
+    for sig in (signal.SIGTERM, signal.SIGINT, signal.SIGUSR1):
+        signal.signal(sig, stop_signal)
+
+    def enqueue(pcm):
+        if pcm:
+            if len(queue) >= 3:
+                raise RuntimeError("Recognition cannot keep up. Dictation stopped safely.")
+            queue.append(pcm)
+
+    try:
+        record_args = ["pw-record", "--raw", "--rate=16000", "--channels=1",
+                       "--format=s16", "--media-role=Communication", "-"]
+        if fixture:
+            record_args = [sys.executable, str(SCRIPT), "--play-fixture", str(fixture)]
+        recorder = subprocess.Popen(record_args, stdout=subprocess.PIPE,
+                                    stderr=subprocess.DEVNULL)
+        os.set_blocking(recorder.stdout.fileno(), False)
+        selector.register(recorder.stdout, selectors.EVENT_READ)
+        notify("Listening — English/Tamil. Super+H stops and finishes; another press cancels.")
+        while True:
+            now = time.monotonic()
+            if now - last_check >= 1:
+                last_check = now
+                if safe_window() != target:
+                    canceled = stopping = True
+                    problem = "Focus changed or screen locked; dictation canceled for safety."
+            if stopping and stop_deadline is None:
+                stop_deadline = now + FINISH_SECONDS
+                terminate(recorder)
+                # Drain only audio already captured before the microphone stopped.
+                while True:
+                    try:
+                        tail = os.read(recorder.stdout.fileno(), 65536)
+                    except BlockingIOError:
+                        break
+                    if not tail:
+                        break
+                    pending.extend(tail)
+                selector.unregister(recorder.stdout)
+                recorder.stdout.close()
+                if not canceled:
+                    while len(pending) >= FRAME_BYTES:
+                        enqueue(segmenter.feed(bytes(pending[:FRAME_BYTES])))
+                        del pending[:FRAME_BYTES]
+                    # Include the final partial frame that was already recorded.
+                    if len(pending) >= 2:
+                        enqueue(segmenter.feed(bytes(pending[:len(pending) // 2 * 2])))
+                    enqueue(segmenter.flush())
+            if canceled or (stop_deadline is not None and now >= stop_deadline):
+                if not canceled:
+                    problem = "Final recognition timed out; remaining dictation workers stopped."
+                break
+            if inference is not None and inference.poll() is not None:
+                code = inference.returncode
+                log_handle.close()
+                log_handle = None
+                if code:
+                    raise RuntimeError("Speech recognition failed; all dictation workers stopped.")
+                text = (runtime / "phrase.txt").read_text().strip()
+                # No transcript in journal/notification/clipboard, no Enter injection.
+                text = " ".join(text.split())
+                if text and safe_window() == target:
+                    command(["wtype", "-"], input=text + " ", text=True,
+                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                            timeout=3, check=True)
+                elif text:
+                    problem = "Focus changed; final text was discarded rather than typed elsewhere."
+                    break
+                inference = None
+                for name in ("phrase.wav", "phrase.txt", "recognizer.log"):
+                    (runtime / name).unlink(missing_ok=True)
+            if inference is not None and now - inference_started >= 10:
+                raise RuntimeError("Recognition timed out; all dictation workers stopped.")
+            if inference is None and queue:
+                with wave.open(str(runtime / "phrase.wav"), "wb") as audio:
+                    audio.setnchannels(1)
+                    audio.setsampwidth(2)
+                    audio.setframerate(RATE)
+                    audio.writeframes(queue.popleft())
+                log_handle = (runtime / "recognizer.log").open("wb")
+                inference = subprocess.Popen([
+                    "whisper-cli", "--no-gpu", "--threads", "2", "--language", "auto",
+                    "--model", str(MODEL), "--file", str(runtime / "phrase.wav"),
+                    "--no-timestamps", "--no-fallback", "--beam-size", "1", "--best-of", "1",
+                    "--suppress-nst", "--output-txt", "--output-file", str(runtime / "phrase")],
+                    stdout=subprocess.DEVNULL, stderr=log_handle)
+                inference_started = time.monotonic()
+            if stopping:
+                if inference is None and not queue:
+                    break
+                time.sleep(0.03)
+            else:
+                for event, _mask in selector.select(timeout=0.1):
+                    data = os.read(event.fileobj.fileno(), 65536)
+                    if not data:
+                        if stopping:
+                            break
+                        raise RuntimeError("Microphone stream ended; dictation stopped safely.")
+                    pending.extend(data)
+                    while len(pending) >= FRAME_BYTES:
+                        enqueue(segmenter.feed(bytes(pending[:FRAME_BYTES])))
+                        del pending[:FRAME_BYTES]
+    finally:
+        # Manager's KillMode=mixed is a second layer: SIGKILL the whole cgroup
+        # on timeout or when main exits, including any unexpected descendants.
+        terminate(recorder)
+        terminate(inference)
+        if log_handle is not None:
+            log_handle.close()
+        selector.close()
+        queue.clear()
+        pending.clear()
+        segmenter.flush()
+        for name in ("phrase.wav", "phrase.txt", "recognizer.log"):
+            (runtime / name).unlink(missing_ok=True)
+    if problem:
+        notify(problem)
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("action", choices=("toggle", "cancel", "status"), nargs="?", default="toggle")
+    parser.add_argument("--worker", action="store_true", help=argparse.SUPPRESS)
+    parser.add_argument("--audio-fixture", type=Path, help=argparse.SUPPRESS)
+    parser.add_argument("--play-fixture", type=Path, help=argparse.SUPPRESS)
+    args = parser.parse_args()
+    try:
+        if args.play_fixture:
+            play_fixture(args.play_fixture)
+        elif args.worker:
+            worker(args.audio_fixture)
+        elif args.action == "cancel":
+            cancel_unit()
+        elif args.action == "status":
+            print(unit_state())
+        else:
+            toggle(args.audio_fixture)
+    except (OSError, RuntimeError, subprocess.SubprocessError) as error:
+        notify(str(error))
+        # Only sanitized lifecycle errors, never recognized speech.
+        print(str(error), file=sys.stderr)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
