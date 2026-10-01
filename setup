@@ -1,0 +1,7 @@
+#!/usr/bin/env python3
+"""CachyOS-first, staged existing-desktop deployment. Not an OS installer."""
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent / "lib"))
+from installer import main
+raise SystemExit(main())

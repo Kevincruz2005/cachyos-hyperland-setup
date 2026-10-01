@@ -13,6 +13,10 @@ SIZE = 32152673
 
 def download(destination):
     destination = Path(destination)
+    if destination.is_symlink():
+        raise RuntimeError("Symlinked speech model destination rejected.")
+    if any(parent.is_symlink() for parent in destination.parents):
+        raise RuntimeError("Symlinked speech model directory requires manual review.")
     if destination.exists():
         if destination.is_symlink() or hashlib.sha256(destination.read_bytes()).hexdigest() != SHA256:
             raise RuntimeError("Existing speech model differs; refusing to replace it.")
@@ -35,7 +39,6 @@ def download(destination):
                 raise RuntimeError("Model checksum/size mismatch; no model installed.")
         temporary.chmod(0o600)
         # link() is atomic and refuses a destination created during download.
-        temporary.hardlink_to if False else None  # no following destination symlinks
         import os
         os.link(temporary, destination)
     finally:

@@ -9,7 +9,8 @@ import subprocess
 
 def run(args, timeout=15):
     try:
-        result = subprocess.run(args, capture_output=True, text=True, timeout=timeout)
+        result = subprocess.run(args, capture_output=True, text=True, timeout=timeout,
+                                env={**os.environ, "LC_ALL": "C"})
         return result.returncode, result.stdout.strip()
     except (OSError, subprocess.TimeoutExpired):
         return 127, ""
@@ -32,7 +33,7 @@ def version(raw):
 
 
 def edid_modes(blob):
-    if len(blob) < 128 or blob[:8] != b"\x00\xff\xff\xff\xff\xff\xff\x00":
+    if len(blob) < 128 or len(blob) % 128 or blob[:8] != b"\x00\xff\xff\xff\xff\xff\xff\x00":
         return []
     if any(sum(blob[i:i+128]) % 256 for i in range(0, len(blob), 128)):
         return []

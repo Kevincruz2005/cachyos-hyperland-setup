@@ -50,7 +50,7 @@ class ScreenshotApp:
                                     text=True, timeout=3, check=True)
             if len(json.loads(result.stdout)) != 1:
                 raise RuntimeError("Single-output screenshot tool: use Noctalia's native screenshot UI for multiple outputs. See docs/AGENT_HANDOFF.md for adaptation.")
-        except (subprocess.SubprocessError, ValueError, RuntimeError) as error:
+        except (OSError, subprocess.SubprocessError, ValueError, RuntimeError) as error:
             self.notify("Screenshot compatibility", str(error))
             sys.exit(2)
         self.tmp_dir = tempfile.mkdtemp(prefix="hypr_snip_")
