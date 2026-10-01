@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+.cache/
+reports/
+backups/
+local/
+*.log
+*.tar*
+*.pkg.tar.*
+*.bin
+*.wav
+*.pem
+.env*
+!*.example
