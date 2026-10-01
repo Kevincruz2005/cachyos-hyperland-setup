@@ -33,7 +33,8 @@ The publishing helper follows the official [GitHub CLI authentication](https://c
 and [existing repository inspection](https://cli.github.com/manual/gh_repo_view) workflow.
 Browser authorization must finish in the initiating CLI; verify the actual identity
 with `gh api user --jq .login` before publishing. Never paste tokens into a chat.
-The owner-selected destination is the existing private
-`Kevincruz2005/cachyos-hyperland-setup` repository. Publication does not create
-another repository or change visibility. Private status does not relax the
-allowlist or privacy checks, and collaborators need explicit repository access.
+The owner-selected destination is `Kevincruz2005/cachyos-hyperland-setup`, intended
+for public reuse but currently kept private by the owner. The publishing helper
+respects its existing visibility and never creates another repository or changes
+visibility. A later public release is the owner's decision. Private status does
+not relax allowlist/privacy checks; collaborators need access until public release.

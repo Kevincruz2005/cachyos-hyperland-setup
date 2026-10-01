@@ -23,7 +23,9 @@ cd cachyos-hyperland-setup
 Read [installation](docs/INSTALL.md) before applying anything. CachyOS-first;
 other distributions and untested versions stop with an agent handoff instead
 of executing guessed package commands. Never pipe downloaded scripts into sudo.
-This repository is private: cloning requires access granted by its owner.
+This project is intended for public reuse, but the owner is keeping the repository
+private during preparation. Until the owner makes it public, cloning requires
+granted access. No setup/publishing command changes repository visibility.
 
 ## What this reproduces
 
@@ -31,7 +33,7 @@ This repository is private: cloning requires access granted by its owner.
 - Adwaita Sans, JetBrainsMono Nerd Font, Bibata cursor and minimal Noctalia bar.
 - Current window/gesture shortcuts, Windows-style show desktop, maximize separate from true fullscreen.
 - Interactive Print Screen crop/preview/copy/save with fractional-scale fixes.
-- Offline English/Tamil phrase dictation, with no idle model/listener and whole-cgroup cleanup.
+- Offline English-only phrase dictation, with no idle model/listener and whole-cgroup cleanup.
 - Event-driven power profiles and SDDM wallpaper synchronization; no new polling daemons.
 - KDE fallback, portals, networking/audio/Bluetooth and optional on-demand local AI.
 
@@ -68,7 +70,7 @@ python tools/validate_export.py  # Native offline checks when binaries are insta
 ```
 
 The author can run `bash tools/publish.sh` after a successful GitHub CLI login.
-It checks the approved owner, private repository, remote, clean history/export and
+It checks the approved owner, repository identity/visibility, remote, clean history/export and
 tests, then pushes `main` to the existing `Kevincruz2005/cachyos-hyperland-setup`
 repository. It never creates a repository, changes visibility or force-pushes.
 Review the allowlist as well; automated secret scans are not a guarantee.

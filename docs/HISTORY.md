@@ -86,6 +86,19 @@ No permanent service, microphone listener, transcript archive or idle model rema
 Public English audio and failure/cleanup fixtures were tested; real microphone and
 English/Tamil mixed-language quality were not established. See DICTATION/VALIDATION.
 
+## English-only follow-up
+
+The owner subsequently preferred English alone. Tiny.en q5_1 with explicit
+language `en` replaces multilingual autodetection, while preserving all transient
+service/resource/cleanup limits. Three interleaved public-audio trials supported
+the choice: faster recognition and less CPU time on this fixture, not a measured
+battery-life improvement. The old helper/model remain privately available for
+rollback, not committed to this repository. See DICTATION for measured results.
+
+The repository is intended for public reuse but remains private until the owner
+chooses otherwise. Publishing respects the existing visibility and never changes
+it; private status does not relax publication privacy checks.
+
 ## Repository export
 
 The export is allowlisted, not a copy of the home directory or raw recovery archives.
