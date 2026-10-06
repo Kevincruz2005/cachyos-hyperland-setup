@@ -92,6 +92,23 @@ gone, with MainPID 0 and the transient unit unloaded. Those timings are fixture
 observations, not guaranteed stop times; the existing 12/15-second finalization
 and manager bounds remain. Real focus/text-field/microphone checks remain manual.
 
+## Screenshot text OCR (2026-10-06)
+
+The preview's O / Copy text action runs installed Tesseract 5.5.3 English OCR
+only on demand, with one OpenMP thread, nice 10 and an independent 20-second
+timeout. Synthetic light and dark two-line images were recognized as expected
+in 0.13/0.15 seconds; a blank image returned no text in 0.10 seconds. Cumulative
+child-process peak RSS was about 89 MiB for these fixtures. These tiny fixtures
+are not full-screen performance, accuracy or battery-life guarantees.
+
+Actual OCR workers exited and their unnamed temporary output files closed.
+Real subprocess fixtures verified scoped cancellation/reaping and the independent
+timeout wrapper. Isolated controller tests cover O/o, duplicate-key prevention,
+busy Esc, UTF-8 text clipboard routing, empty/error preservation of the preview
+and active timer/worker cleanup. They mock clipboard access and never capture
+the user's display. End-to-end physical Print/crop/O/paste and visual card checks
+remain owner-assisted; tests did not overwrite the user's clipboard.
+
 ## Matched A/B procedure
 
 Use the same brightness, actual refresh rate, power profile, radios, keyboard

@@ -2,7 +2,7 @@
 """
 Interactive Screenshot Tool for Hyprland
 - Crop mode: Click & drag to select region, or press 'F' for Fullscreen, or 'Esc' to cancel.
-- Decision mode: Press 'C' to copy to clipboard, 'Enter' to save to ~/Pictures/Screenshots, or 'Esc' to discard.
+- Decision mode: 'C' copies the image, 'O' copies recognized English text, 'Enter' saves, 'Esc' discards.
 """
 
 import os
@@ -19,6 +19,8 @@ import shutil
 import json
 import tempfile
 import subprocess
+import signal
+import time
 from math import floor, ceil
 from datetime import datetime
 
@@ -40,9 +42,63 @@ def logical_to_image_rect(x, y, w, h, image_w, image_h, view_w, view_h):
     bottom = max(top, min(image_h, ceil((y + h) * sy)))
     return left, top, right - left, bottom - top
 
+class OCRJob:
+    """One-shot local CPU OCR. No startup work, server, GPU or transcript archive."""
+    def __init__(self, image):
+        if not shutil.which("tesseract"):
+            raise RuntimeError("OCR needs the official tesseract and tesseract-data-eng packages.")
+        self.output = tempfile.TemporaryFile(mode="w+b")
+        self.process = None
+        self.started = time.monotonic()
+        environment = os.environ.copy()
+        environment["OMP_THREAD_LIMIT"] = "1"
+        # The screenshot's GTK preload is unnecessary in a CPU OCR subprocess.
+        environment.pop("LD_PRELOAD", None)
+        try:
+            self.process = subprocess.Popen(
+                ["timeout", "--signal=KILL", "20s", "nice", "-n", "10",
+                 "tesseract", image, "stdout", "-l", "eng", "--psm", "11"],
+                stdout=self.output, stderr=subprocess.DEVNULL, env=environment,
+                start_new_session=True)
+        except BaseException:
+            self.close()
+            raise
+
+    def poll(self):
+        code = self.process.poll()
+        if code is None:
+            if time.monotonic() - self.started >= 20:
+                self.close()
+                raise RuntimeError("OCR exceeded 20 seconds and was stopped; try a smaller crop.")
+            return None
+        try:
+            if code:
+                raise RuntimeError("OCR failed. Check that tesseract-data-eng is installed.")
+            self.output.seek(0)
+            data = self.output.read(1024 * 1024 + 1)
+            if len(data) > 1024 * 1024:
+                raise RuntimeError("OCR text exceeds the clipboard limit; try a smaller crop.")
+            return data.decode("utf-8", errors="replace").strip()
+        finally:
+            self.close()
+
+    def close(self):
+        if self.process is not None and self.process.poll() is None:
+            # Scope cancellation to this OCR process group; never kill another app.
+            try:
+                os.killpg(self.process.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            self.process.wait(timeout=2)
+        self.output.close()
+
+
 class ScreenshotApp:
     def __init__(self, gtk_app):
         self.app = gtk_app
+        self.ocr_job = None
+        self.ocr_timer = None
+        self.app.connect("shutdown", lambda *_: self.cleanup())
         # Original pixel conversion was tested on a single output. Reject a
         # multi-output layout instead of silently mapping the wrong screen.
         try:
@@ -86,6 +142,7 @@ class ScreenshotApp:
 
     def setup_window(self):
         self.win = Gtk.ApplicationWindow(application=self.app)
+        self.win.connect("close-request", self.on_close_request)
         
         # Configure LayerShell
         Gtk4LayerShell.init_for_window(self.win)
@@ -389,6 +446,11 @@ class ScreenshotApp:
         sub.add_css_class("decision-sub")
         sub.set_halign(Gtk.Align.START)
         title_box.append(sub)
+        self.decision_status = Gtk.Label(label="[O] Copy English text · [Esc] Cancel")
+        self.decision_status.set_wrap(True)
+        self.decision_status.set_max_width_chars(65)
+        self.decision_status.add_css_class("decision-sub")
+        title_box.append(self.decision_status)
         card.append(title_box)
 
         # Image preview
@@ -424,6 +486,11 @@ class ScreenshotApp:
         btn_copy.connect("clicked", lambda _: self.action_copy())
         btn_box.append(btn_copy)
 
+        btn_ocr = Gtk.Button(label="[O] Copy text")
+        btn_ocr.add_css_class("btn-copy")
+        btn_ocr.connect("clicked", lambda _: self.action_ocr())
+        btn_box.append(btn_ocr)
+
         btn_save = Gtk.Button(label="💾  [Enter] Save")
         btn_save.add_css_class("btn-save")
         btn_save.connect("clicked", lambda _: self.action_save())
@@ -433,6 +500,7 @@ class ScreenshotApp:
         btn_cancel.add_css_class("btn-cancel")
         btn_cancel.connect("clicked", lambda _: self.action_cancel())
         btn_box.append(btn_cancel)
+        self.decision_buttons = (btn_copy, btn_ocr, btn_save)
 
         card.append(btn_box)
         self.overlay.add_overlay(card)
@@ -452,6 +520,9 @@ class ScreenshotApp:
             if keyval in (Gdk.KEY_c, Gdk.KEY_C):
                 self.action_copy()
                 return True
+            elif keyval in (Gdk.KEY_o, Gdk.KEY_O):
+                self.action_ocr()
+                return True
             # 'Enter' / 'Return' / NumPad Enter saves to file
             elif keyval in (Gdk.KEY_Return, Gdk.KEY_KP_Enter):
                 self.action_save()
@@ -460,9 +531,17 @@ class ScreenshotApp:
                 self.action_cancel()
                 return True
 
+        elif self.phase == "OCR":
+            if keyval == Gdk.KEY_Escape:
+                self.action_cancel()
+            # Ignore repeated OCR/copy/save keys while recognition is running.
+            return True
+
         return False
 
     def action_copy(self):
+        if self.phase != "DECIDE":
+            return
         try:
             with open(self.cropped_png, "rb") as f:
                 subprocess.run(["wl-copy", "--type", "image/png"], stdin=f, check=True)
@@ -472,6 +551,8 @@ class ScreenshotApp:
         self.cleanup_and_quit()
 
     def action_save(self):
+        if self.phase != "DECIDE":
+            return
         try:
             save_dir = os.path.expanduser("~/Pictures/Screenshots")
             os.makedirs(save_dir, exist_ok=True)
@@ -488,6 +569,53 @@ class ScreenshotApp:
             self.notify("Save Failed", str(e))
         self.cleanup_and_quit()
 
+    def action_ocr(self):
+        if self.phase != "DECIDE":
+            return
+        try:
+            self.ocr_job = OCRJob(self.cropped_png)
+            self.phase = "OCR"
+            self.decision_status.set_label("Reading English text… [Esc] cancels")
+            for button in self.decision_buttons:
+                button.set_sensitive(False)
+            # Only active while this one OCR job is running; not an idle poller.
+            self.ocr_timer = GLib.timeout_add(100, self.poll_ocr)
+        except (OSError, RuntimeError) as error:
+            self.ocr_failed(str(error))
+
+    def poll_ocr(self):
+        try:
+            text = self.ocr_job.poll()
+            if text is None:
+                return GLib.SOURCE_CONTINUE
+            self.ocr_job = None
+            self.ocr_timer = None
+            if not text:
+                self.ocr_failed("No text found. Try a tighter crop with larger, clearer letters.")
+                return GLib.SOURCE_REMOVE
+            subprocess.run(["wl-copy", "--type", "text/plain;charset=utf-8"],
+                           input=text, text=True, check=True, timeout=3)
+            # Do not reveal recognized text in notifications, journals or saved files.
+            self.notify("Text Copied", "Recognized English text copied to clipboard.")
+            self.cleanup_and_quit()
+        except (OSError, RuntimeError, subprocess.SubprocessError) as error:
+            self.ocr_timer = None
+            self.ocr_failed(str(error))
+        return GLib.SOURCE_REMOVE
+
+    def ocr_failed(self, message):
+        if self.ocr_job is not None:
+            self.ocr_job.close()
+            self.ocr_job = None
+        self.phase = "DECIDE"
+        self.decision_status.set_label(message)
+        for button in self.decision_buttons:
+            button.set_sensitive(True)
+
+    def on_close_request(self, *_args):
+        self.cleanup()
+        return False
+
     def action_cancel(self):
         self.cleanup_and_quit()
 
@@ -503,6 +631,12 @@ class ScreenshotApp:
             pass
 
     def cleanup(self):
+        if self.ocr_timer is not None:
+            GLib.source_remove(self.ocr_timer)
+            self.ocr_timer = None
+        if self.ocr_job is not None:
+            self.ocr_job.close()
+            self.ocr_job = None
         if hasattr(self, "tmp_dir") and os.path.exists(self.tmp_dir):
             shutil.rmtree(self.tmp_dir, ignore_errors=True)
 

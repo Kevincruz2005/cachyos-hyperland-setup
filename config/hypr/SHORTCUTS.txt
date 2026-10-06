@@ -41,7 +41,7 @@ DESKTOP
   Super + V               Clipboard history
   Super + H               English/Tamil dictation on/off (finishes final phrase, then fully exits)
   Super + Shift + H       Immediately cancel dictation and kill all its workers
-  Super + Shift + S       Interactive screenshot (Drag to crop / [F] Fullscreen -> [C] Copy / [Enter] Save)
+  Super + Shift + S       Screenshot: crop / [F] Fullscreen -> [C] Image / [O] Text OCR / [Enter] Save
   Print                   Interactive screenshot (alternative)
   Super + Print           Instant fullscreen screenshot
   Super + L               Lock screen

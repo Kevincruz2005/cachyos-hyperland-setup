@@ -2,6 +2,6 @@
   "core": ["cachyos-hypr-noctalia", "sddm", "dolphin", "brave-bin", "gnome-calculator", "gnome-text-editor", "ttf-jetbrains-mono-nerd", "adwaita-fonts", "adw-gtk-theme", "noto-fonts", "breeze-icons", "breeze", "power-profiles-daemon", "xdg-desktop-portal-gtk", "python", "python-gobject", "python-cairo", "gtk4-layer-shell", "libnotify"],
   "dictation": ["whisper-cpp", "wtype"],
   "nvidia_existing_driver_only": ["nvidia-prime"],
-  "optional": {"ollama": ["ollama"], "hyprmod": []},
+  "optional": {"ollama": ["ollama"], "hyprmod": [], "screenshot_ocr": ["tesseract", "tesseract-data-eng"]},
   "tested_versions": {"hyprland": ["0.56.2"], "noctalia": ["5.2.0"], "uwsm": ["0.27.0"]}
 }

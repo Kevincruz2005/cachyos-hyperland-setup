@@ -26,8 +26,18 @@ Three fingers up maximize; down restore. Three-finger horizontal floating is
 disabled. Four-finger horizontal switches workspaces. Tap-to-click on, natural
 scroll off, adaptive acceleration. Media/brightness keys use Noctalia actions.
 
-Screenshots: drag to crop, F full screen, Esc cancel; then C copy, Enter save
-and copy, Esc discard. Fractional scaling preserves original pixels. One-output
+Screenshots: drag to crop, F full screen, Esc cancel; then C copies the image,
+O recognizes English text and copies it, Enter saves and copies the image,
+Esc discards (or cancels active OCR). OCR is local Tesseract, started only on O,
+one CPU thread at low priority, with a 20-second hard timeout and no server,
+GPU inference or persistent OCR model. If OCR finds nothing or fails, the
+preview remains and the clipboard is unchanged; image copy/save still work.
+Requires optional official `tesseract` and `tesseract-data-eng` packages. It
+recognizes printed text, not reliably handwriting or complex reading order;
+use a tight, clear crop. Recognized text is not saved or shown in notifications,
+but intentionally enters the clipboard and may be retained by clipboard history.
+The normal clipboard owner may remain to serve copied text; it is not an OCR worker.
+Fractional scaling preserves original pixels. One-output
 capture is tested; mixed-scale multi-output layouts are not claimed supported.
 
 Appearance: dynamic dark m3-tonal-spot colors from a static wallpaper; GTK/Qt/
