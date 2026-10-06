@@ -112,6 +112,14 @@ class OCRTests(unittest.TestCase):
 
 
 class ControllerTests(unittest.TestCase):
+    def test_original_three_button_preview_preserved(self):
+        app_class = next(n for n in tree.body if isinstance(n, ast.ClassDef) and n.name == "ScreenshotApp")
+        card = next(n for n in app_class.body if isinstance(n, ast.FunctionDef) and n.name == "show_decision_card")
+        labels = [kw.value.value for n in ast.walk(card) if isinstance(n, ast.Call)
+                  and isinstance(n.func, ast.Attribute) and n.func.attr == "Button"
+                  for kw in n.keywords if kw.arg == "label" and isinstance(kw.value, ast.Constant)]
+        self.assertEqual(labels, ["📋  [C] Copy", "💾  [Enter] Save", "✕  [Esc] Cancel"])
+
     def app(self):
         app = ScreenshotApp.__new__(ScreenshotApp)
         app.phase = "DECIDE"

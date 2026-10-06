@@ -94,7 +94,7 @@ and manager bounds remain. Real focus/text-field/microphone checks remain manual
 
 ## Screenshot text OCR (2026-10-06)
 
-The preview's O / Copy text action runs installed Tesseract 5.5.3 English OCR
+The preview's O key runs installed Tesseract 5.5.3 English OCR
 only on demand, with one OpenMP thread, nice 10 and an independent 20-second
 timeout. Synthetic light and dark two-line images were recognized as expected
 in 0.13/0.15 seconds; a blank image returned no text in 0.10 seconds. Cumulative
@@ -108,6 +108,34 @@ busy Esc, UTF-8 text clipboard routing, empty/error preservation of the preview
 and active timer/worker cleanup. They mock clipboard access and never capture
 the user's display. End-to-end physical Print/crop/O/paste and visual card checks
 remain owner-assisted; tests did not overwrite the user's clipboard.
+
+Follow-up real startup check found the reference machine's `gtk4-layer-shell`
+dependency had been removed on October 5 alongside Ghostty leftovers. Python
+failed at importing `Gtk4LayerShell`, before either the original or OCR UI could
+open. Isolated OCR tests did not detect that missing host dependency. The
+preview has been returned to the original three buttons (C copy, Enter save,
+Esc cancel); O is keyboard-only after crop/F capture.
+
+After owner approval, the signed official `gtk4-layer-shell` 1.3.0-1.1 package
+was restored in a reviewed one-package transaction: no upgrades or removals.
+Snapshot hooks were suppressed for that transaction only, and the snapshot
+watcher was temporarily stopped with its writer runtime-masked. Initial cleanup
+attempted to start the watcher before removing its target's mask and failed;
+the corrective cleanup removed the temporary mask first and restored the watcher.
+Final checks found the watcher active, its writer inactive, no runtime mask,
+45 package files with none missing, and unchanged checksums for the inspected
+GRUB configuration files. No boot-generation command was executed.
+
+Real Wayland GTK tests of the live helper then passed full-capture/C image copy,
+bottom-right crop/Enter save, full-capture/O English OCR, blank OCR returning to
+the preview without changing the clipboard, and actual screen capture/Esc
+cancellation. Clipboard writes were intercepted and test saves redirected to a
+private temporary directory; no user's clipboard or Pictures files were changed.
+Each temporary capture directory disappeared and observed OCR workers were
+reaped with their output files closed. The test UI used Cairo; NVIDIA graphics
+and audio were runtime-suspended before and after. All 73 isolated tests passed.
+Physical Print/crop/O/paste remains owner-assisted; these checks do not establish
+full-screen accuracy or zero energy cost while recognition is active.
 
 ## Matched A/B procedure
 

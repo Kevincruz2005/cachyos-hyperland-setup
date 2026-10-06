@@ -442,15 +442,11 @@ class ScreenshotApp:
         title.set_halign(Gtk.Align.START)
         title_box.append(title)
 
-        sub = Gtk.Label(label=f"Area: {self.crop_w} × {self.crop_h} px")
+        sub = Gtk.Label(label=f"Area: {self.crop_w} × {self.crop_h} px · [O] Copy text")
         sub.add_css_class("decision-sub")
         sub.set_halign(Gtk.Align.START)
         title_box.append(sub)
-        self.decision_status = Gtk.Label(label="[O] Copy English text · [Esc] Cancel")
-        self.decision_status.set_wrap(True)
-        self.decision_status.set_max_width_chars(65)
-        self.decision_status.add_css_class("decision-sub")
-        title_box.append(self.decision_status)
+        self.decision_status = sub
         card.append(title_box)
 
         # Image preview
@@ -486,11 +482,6 @@ class ScreenshotApp:
         btn_copy.connect("clicked", lambda _: self.action_copy())
         btn_box.append(btn_copy)
 
-        btn_ocr = Gtk.Button(label="[O] Copy text")
-        btn_ocr.add_css_class("btn-copy")
-        btn_ocr.connect("clicked", lambda _: self.action_ocr())
-        btn_box.append(btn_ocr)
-
         btn_save = Gtk.Button(label="💾  [Enter] Save")
         btn_save.add_css_class("btn-save")
         btn_save.connect("clicked", lambda _: self.action_save())
@@ -500,7 +491,7 @@ class ScreenshotApp:
         btn_cancel.add_css_class("btn-cancel")
         btn_cancel.connect("clicked", lambda _: self.action_cancel())
         btn_box.append(btn_cancel)
-        self.decision_buttons = (btn_copy, btn_ocr, btn_save)
+        self.decision_buttons = (btn_copy, btn_save)
 
         card.append(btn_box)
         self.overlay.add_overlay(card)
