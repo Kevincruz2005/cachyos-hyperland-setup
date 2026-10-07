@@ -1,0 +1,87 @@
+# Native Noctalia 5.2.1 reference lock screen; NOT an automatic host config.
+# Detected Dell panel: 1920x1080 at 1.25 scale = 1536x864 logical pixels.
+# Before deployment, derive output, logical geometry and layout from the TARGET.
+# See docs/LOCKSCREEN.md; never overwrite private settings.toml wholesale.
+[lockscreen]
+wallpaper = ""
+tint_intensity = 0.38
+
+[lockscreen_widgets]
+enabled = true
+schema_version = 2
+widget_order = ["lockscreen-widget-time", "lockscreen-widget-date", "lockscreen-login-box@eDP-1"]
+
+[lockscreen_widgets.grid]
+visible = false
+cell_size = 16
+major_interval = 4
+
+[lockscreen_widgets.widget.lockscreen-widget-time]
+type = "clock"
+output = "eDP-1"
+cx = 768.0
+cy = 230.0
+box_width = 560.0
+box_height = 128.0
+placement_width = 1536.0
+placement_height = 864.0
+rotation = 0.0
+enabled = true
+
+[lockscreen_widgets.widget.lockscreen-widget-time.settings]
+clock_style = "digital"
+format = "{:%H:%M}"
+center_text = true
+color = "primary"
+font_family = "Adwaita Sans"
+background = false
+shadow = false
+
+[lockscreen_widgets.widget.lockscreen-widget-date]
+type = "clock"
+output = "eDP-1"
+cx = 768.0
+cy = 315.0
+box_width = 440.0
+box_height = 32.0
+placement_width = 1536.0
+placement_height = 864.0
+rotation = 0.0
+enabled = true
+
+[lockscreen_widgets.widget.lockscreen-widget-date.settings]
+clock_style = "digital"
+format = "{:%A, %-d %B}"
+center_text = true
+color = "on_surface_variant"
+font_family = "Adwaita Sans"
+background = false
+shadow = false
+
+[lockscreen_widgets.widget."lockscreen-login-box@eDP-1"]
+type = "login_box"
+output = "eDP-1"
+cx = 768.0
+cy = 432.0
+box_width = 520.0
+box_height = 72.0
+placement_width = 1536.0
+placement_height = 864.0
+rotation = 0.0
+enabled = true
+
+[lockscreen_widgets.widget."lockscreen-login-box@eDP-1".settings]
+layout = "compact"
+background_color = "surface"
+background_opacity = 0.94
+background_radius = 20.0
+input_opacity = 1.0
+input_radius = 12.0
+center_password_text = true
+show_login_button = true
+show_unlock_hint = true
+show_caps_lock = true
+show_keyboard_layout = true
+show_session_buttons = false
+show_media = false
+show_weather = false

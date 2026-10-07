@@ -137,6 +137,16 @@ and audio were runtime-suspended before and after. All 73 isolated tests passed.
 Physical Print/crop/O/paste remains owner-assisted; these checks do not establish
 full-screen accuracy or zero energy cost while recognition is active.
 
+## Native adaptive lock-screen update (2026-10-07)
+
+Noctalia 5.2.1 native clock/date and compact login styling passed staged/live
+schema validation and an unlocked visual preview. The original backup stayed
+unchanged and its recovery was exercised only in a disposable home. No packages,
+daemons, authentication handlers or idle timeouts were changed. Unrelated
+preferences and existing helpers stayed unchanged. See [LOCKSCREEN.md](LOCKSCREEN.md)
+for the exact role-based profile, short resource observations and manual checks.
+The profile is a reviewed reference, not a new automatic installer version gate.
+
 ## Matched A/B procedure
 
 Use the same brightness, actual refresh rate, power profile, radios, keyboard

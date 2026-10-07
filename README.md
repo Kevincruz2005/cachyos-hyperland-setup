@@ -35,6 +35,7 @@ granted access. No setup/publishing command changes repository visibility.
 - Interactive Print Screen crop/preview/copy/save and on-demand English text OCR, with fractional-scale fixes.
 - Offline English-only phrase dictation, with no idle model/listener and whole-cgroup cleanup.
 - Event-driven power profiles and SDDM wallpaper synchronization; no new polling daemons.
+- Native adaptive lock-screen reference profile, with separately reviewed host-specific layout.
 - KDE fallback, portals, networking/audio/Bluetooth and optional on-demand local AI.
 
 Current Dell tuning includes 125% display scaling, zero gaps and black active
@@ -54,6 +55,7 @@ or session termination. Package and system-level steps require review.
 | [Installation](docs/INSTALL.md) | Staged migration and recovery |
 | [Migration history](docs/HISTORY.md) | Decisions and evidence, not fabricated chat history |
 | [Validation](docs/VALIDATION.md) | Verified results and outstanding hardware checks |
+| [Adaptive lock screen](docs/LOCKSCREEN.md) | Reference styling, efficient rendering and safe adaptation |
 | [Coding-agent handoff](docs/AGENT_HANDOFF.md) | Adapt unsupported hardware safely |
 | [Provenance](docs/PROVENANCE.md) | Sources, licenses and publication boundaries |
 

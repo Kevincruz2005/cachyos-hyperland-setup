@@ -31,6 +31,7 @@ def main():
             ["Hyprland", "--verify-config", "--config", str(home / ".config/hypr/hyprland.lua")],
             ["noctalia", "config", "validate", str(home / ".config/noctalia")],
             ["noctalia", "config", "validate", str(home / ".local/state/noctalia/settings.toml")],
+            ["noctalia", "config", "validate", str(ROOT / "profiles/lockscreen-reference.toml")],
         ]
         for command in commands:
             result = subprocess.run(command, cwd=home / ".config/hypr", env=env, capture_output=True, text=True, timeout=30)
