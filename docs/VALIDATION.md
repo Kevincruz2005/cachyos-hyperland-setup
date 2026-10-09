@@ -137,6 +137,18 @@ and audio were runtime-suspended before and after. All 73 isolated tests passed.
 Physical Print/crop/O/paste remains owner-assisted; these checks do not establish
 full-screen accuracy or zero energy cost while recognition is active.
 
+## Screenshot presentation update (2026-10-07)
+
+The screenshot card now uses plain text labels, flat buttons and a restrained
+border instead of emoji decorations, gradients and a large shadow. Capture,
+fractional-scale coordinates, keyboard actions, clipboard/save operations and
+bounded OCR logic were preserved. AST comparison against each private original
+confirmed that only string literals changed in the live and exported helpers;
+the installed GTK CSS parser reported no errors. All 77 isolated tests passed.
+No new process, service or dependency was added. This presentation-only check
+did not capture the screen or modify the clipboard; visual acceptance remains
+owner-assisted.
+
 ## Native adaptive lock-screen update (2026-10-07)
 
 Noctalia 5.2.1 native clock/date and compact login styling passed staged/live

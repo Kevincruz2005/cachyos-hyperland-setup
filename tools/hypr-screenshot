@@ -188,20 +188,19 @@ class ScreenshotApp:
         css = b"""
         .decision-card {
             background-color: rgba(22, 24, 34, 0.95);
-            border: 2px solid #7aa2f7;
-            border-radius: 16px;
+            border: 1px solid rgba(122, 162, 247, 0.35);
+            border-radius: 12px;
             padding: 24px 28px;
-            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8);
         }
         .decision-title {
             font-size: 19px;
-            font-weight: 800;
+            font-weight: 600;
             color: #c0caf5;
             margin-bottom: 2px;
         }
         .decision-sub {
             font-size: 13px;
-            color: #7982a9;
+            color: #a9b1d6;
             margin-bottom: 14px;
         }
         .preview-box {
@@ -212,34 +211,34 @@ class ScreenshotApp:
             margin-bottom: 18px;
         }
         .btn-copy {
-            background: linear-gradient(135deg, #3d59a1, #4872c0);
+            background-color: #3d59a1;
             color: #ffffff;
             font-size: 13px;
-            font-weight: bold;
-            border-radius: 10px;
+            font-weight: 600;
+            border-radius: 6px;
             padding: 10px 18px;
             border: none;
         }
         .btn-copy:hover {
-            background: linear-gradient(135deg, #4872c0, #5a87db);
+            background-color: #4872c0;
         }
         .btn-save {
-            background: linear-gradient(135deg, #7aa2f7, #89b4fa);
+            background-color: #7aa2f7;
             color: #1a1b26;
             font-size: 13px;
-            font-weight: bold;
-            border-radius: 10px;
+            font-weight: 600;
+            border-radius: 6px;
             padding: 10px 18px;
             border: none;
         }
         .btn-save:hover {
-            background: linear-gradient(135deg, #89b4fa, #a6c8ff);
+            background-color: #89b4fa;
         }
         .btn-cancel {
             background-color: rgba(255, 255, 255, 0.08);
             color: #a9b1d6;
             font-size: 13px;
-            border-radius: 10px;
+            border-radius: 6px;
             padding: 10px 16px;
             border: 1px solid rgba(255, 255, 255, 0.12);
         }
@@ -292,7 +291,7 @@ class ScreenshotApp:
             cr.select_font_face("JetBrainsMono Nerd Font", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_BOLD)
             cr.set_font_size(13.5)
             cr.set_source_rgb(0.9, 0.93, 1.0)
-            text = "✂  Drag to Crop   •   [F] Fullscreen   •   [Esc] Cancel"
+            text = "Drag to select   |   [F] Full screen   |   [Esc] Cancel"
             ext = cr.text_extents(text)
             cr.move_to(banner_x + (banner_w - ext.width) / 2, banner_y + (banner_h + ext.height) / 2 - 2)
             cr.show_text(text)
@@ -437,7 +436,7 @@ class ScreenshotApp:
 
         # Title
         title_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
-        title = Gtk.Label(label="📸 Screenshot Captured")
+        title = Gtk.Label(label="Screenshot captured")
         title.add_css_class("decision-title")
         title.set_halign(Gtk.Align.START)
         title_box.append(title)
@@ -477,17 +476,17 @@ class ScreenshotApp:
         btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
         btn_box.set_halign(Gtk.Align.CENTER)
 
-        btn_copy = Gtk.Button(label="📋  [C] Copy")
+        btn_copy = Gtk.Button(label="Copy [C]")
         btn_copy.add_css_class("btn-copy")
         btn_copy.connect("clicked", lambda _: self.action_copy())
         btn_box.append(btn_copy)
 
-        btn_save = Gtk.Button(label="💾  [Enter] Save")
+        btn_save = Gtk.Button(label="Save [Enter]")
         btn_save.add_css_class("btn-save")
         btn_save.connect("clicked", lambda _: self.action_save())
         btn_box.append(btn_save)
 
-        btn_cancel = Gtk.Button(label="✕  [Esc] Cancel")
+        btn_cancel = Gtk.Button(label="Cancel [Esc]")
         btn_cancel.add_css_class("btn-cancel")
         btn_cancel.connect("clicked", lambda _: self.action_cancel())
         btn_box.append(btn_cancel)

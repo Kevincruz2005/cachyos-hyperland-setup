@@ -118,7 +118,16 @@ class ControllerTests(unittest.TestCase):
         labels = [kw.value.value for n in ast.walk(card) if isinstance(n, ast.Call)
                   and isinstance(n.func, ast.Attribute) and n.func.attr == "Button"
                   for kw in n.keywords if kw.arg == "label" and isinstance(kw.value, ast.Constant)]
-        self.assertEqual(labels, ["📋  [C] Copy", "💾  [Enter] Save", "✕  [Esc] Cancel"])
+        self.assertEqual(labels, ["Copy [C]", "Save [Enter]", "Cancel [Esc]"])
+
+    def test_plain_labels_and_flat_card_styling(self):
+        source = (ROOT / "tools/hypr-screenshot").read_text()
+        for decoration in ("📋", "💾", "📸", "✂", "✕"):
+            self.assertNotIn(decoration, source)
+        self.assertIn('label="Screenshot captured"', source)
+        self.assertIn("[F] Full screen", source)
+        self.assertNotIn("linear-gradient", source)
+        self.assertNotIn("box-shadow", source)
 
     def app(self):
         app = ScreenshotApp.__new__(ScreenshotApp)
