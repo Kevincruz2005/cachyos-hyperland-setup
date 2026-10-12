@@ -6,7 +6,7 @@ Super is the Windows/logo key. Super+F1 opens the installed complete cheat sheet
 | --- | --- |
 | Super+Enter / Ctrl+Alt+T | Kitty; Shift+Super+Enter is centered floating Kitty |
 | Super+Space / R | Noctalia launcher |
-| Super+E | Dolphin |
+| Super+E | Dolphin, following the tiling layout |
 | Super+B / Super+W | Firefox / Brave |
 | Calculator key / Super+C | Calculator |
 | Alt+F4 / Super+Q | Close focused app |
@@ -26,6 +26,10 @@ Super is the Windows/logo key. Super+F1 opens the installed complete cheat sheet
 Three fingers up maximize; down restore. Three-finger horizontal floating is
 disabled. Four-finger horizontal switches workspaces. Tap-to-click on, natural
 scroll off, adaptive acceleration. Media/brightness keys use Noctalia actions.
+
+Normal Dolphin windows follow the tiling layout instead of opening as small
+cursor-positioned floating windows. Standard transient/dialog handling is
+retained; floating can still be toggled manually with Super+Alt+Space.
 
 Super+B launches Firefox through UWSM; Super+W keeps the configured browser
 (Brave in the reference setup). This does not change MIME/URL defaults or the

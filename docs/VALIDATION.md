@@ -159,6 +159,17 @@ preferences and existing helpers stayed unchanged. See [LOCKSCREEN.md](LOCKSCREE
 for the exact role-based profile, short resource observations and manual checks.
 The profile is a reviewed reference, not a new automatic installer version gate.
 
+## Dolphin tiling correction (2026-10-12)
+
+Removed the normal Dolphin rule that forced floating, fractional sizing and
+cursor-relative placement. Generic transient/modal handling was left unchanged.
+Native live/export configuration validation passed. After a config-only reload,
+a Dolphin window launched through the Super+E command reported class
+org.kde.dolphin and floating=false. No existing windows were closed; monitor,
+theme, power and package settings were not changed. A regression test guards
+against reintroducing the removed rule; all 81 isolated tests passed. Dialog
+interaction remains owner-assisted rather than claimed as an end-to-end pass.
+
 ## Matched A/B procedure
 
 Use the same brightness, actual refresh rate, power profile, radios, keyboard
