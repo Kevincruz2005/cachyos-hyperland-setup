@@ -131,7 +131,7 @@ def render(home, host, wallpaper, sddm=False):
                 relative = Path(".config") / family / source.relative_to(ROOT / "config" / family)
                 result[str(relative)] = source.read_bytes()
     result[".config/hypr/config/host.lua"] = lua_host(host["display"])
-    for script in ("hypr-screenshot", "hypr-dictation", "sddm-wallpaper-sync"):
+    for script in ("hypr-screenshot", "hypr-dictation", "sddm-wallpaper-sync", "power-mode-cycle"):
         result[".local/bin/" + script] = (ROOT / "tools" / script).read_bytes()
     result[".config/noctalia/hooks/power-profile.sh"] = (ROOT / "tools/power-profile.sh").read_bytes()
     result[".local/share/color-schemes/noctalia.colors"] = (ROOT / "palettes/noctalia.colors").read_bytes()

@@ -75,6 +75,14 @@ on. All five Noctalia monitor poll intervals zero; weather/calendar/dock/desktop
 widgets/wallpaper automation off. Lock at 10 minutes, screen off at 11; automatic
 idle suspend disabled until physical validation.
 
+Super+N cycles the available `powerprofilesctl` modes in this order:
+power-saver → balanced → performance → power-saver. The one-shot helper shows a
+short notification and exits; it adds no service or polling. Performance can
+increase power use, especially on battery. This is a manual selection, and the
+existing power-profiles-daemon battery-aware policy and Noctalia AC/battery
+hooks can change it again when the power source changes. The shortcut does not
+modify that policy, GPU routing or display refresh rate.
+
 SDDM login and Noctalia lock are separate. Password entry stays normal. Only
 SDDM wallpaper follows later wallpaper changes; greeter colors are a static
 snapshot. No Enter-to-reveal password mode or animated greeter background.

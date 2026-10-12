@@ -48,6 +48,7 @@ DESKTOP
   Super + L               Lock screen
   Super + A               Notifications
   Super + X               Control center
+  Super + N               Cycle power saver → balanced → performance (manual until power event)
   Super + Z               Noctalia settings
   Super + Alt + C         Session/power menu (asks before destructive action)
   Super + Shift + W       Wallpaper chooser

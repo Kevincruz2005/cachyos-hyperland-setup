@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
+# One-shot manual profile cycle. Existing AC/battery event policy remains intact.
+set -euo pipefail
+
+if [[ $# -gt 1 || ( $# -eq 1 && $1 != --dry-run ) ]]; then
+    printf 'Usage: power-mode-cycle [--dry-run]\n' >&2
+    exit 2
+fi
+
+runtime_dir=${XDG_RUNTIME_DIR:-}
+if [[ ! -d $runtime_dir || ! -O $runtime_dir ]]; then
+    printf 'A user runtime directory is required.\n' >&2
+    exit 1
+fi
+
+# Serialize rapid key presses; the lock is a tiny file in the session runtime.
+umask 077
+exec 9>>"$runtime_dir/cachyos-power-mode-cycle.lock"
+flock -w 2 9
+
+current=$(powerprofilesctl get)
+listing=$(powerprofilesctl list)
+modes=()
+for candidate in power-saver balanced performance; do
+    if [[ $listing == *"$candidate:"* ]]; then
+        modes+=("$candidate")
+    fi
+done
+if (( ${#modes[@]} == 0 )); then
+    printf 'No power profiles are available.\n' >&2
+    exit 1
+fi
+
+next=${modes[0]}
+for ((i=0; i<${#modes[@]}; i++)); do
+    if [[ $current == "${modes[i]}" ]]; then
+        next=${modes[(i+1)%${#modes[@]}]}
+        break
+    fi
+done
+
+if [[ ${1:-} == --dry-run ]]; then
+    printf '%s -> %s\n' "$current" "$next"
+    exit 0
+fi
+
+if ! powerprofilesctl set "$next"; then
+    notify-send --transient --app-name='Power profile' --expire-time=3000 \
+        'Power mode unchanged' "Could not switch to $next" >/dev/null 2>&1 || true
+    exit 1
+fi
+actual=$(powerprofilesctl get)
+if [[ $actual != "$next" ]]; then
+    notify-send --transient --app-name='Power profile' --expire-time=3000 \
+        'Power mode changed again' "Current mode: $actual" >/dev/null 2>&1 || true
+    exit 1
+fi
+
+case $actual in
+    power-saver) label='Power saver' ;;
+    balanced) label='Balanced' ;;
+    performance) label='Performance (higher power use)' ;;
+esac
+notify-send --transient --app-name='Power profile' --expire-time=2500 \
+    'Power mode' "$label" >/dev/null 2>&1 || true
+printf '%s\n' "$actual"
