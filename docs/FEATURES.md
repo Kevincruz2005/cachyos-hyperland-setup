@@ -51,6 +51,13 @@ Kitty templates; Dolphin's explicit noctalia selection with a case-compatible
 Noctalia.colors alias. Adwaita Sans shell, JetBrainsMono Nerd Font 12pt Kitty,
 opaque background, no blinking cursor/bell, 10,000 scrollback lines.
 
+Avatar: the profile sets `[shell].avatar_path = ""`, using Noctalia's native
+default/account fallback instead of exporting a personal photo. With no account
+photo, the Control Center keeps its empty native avatar placeholder. An existing
+AccountsService photo can still appear; the installer deliberately does not
+modify system account data. See [avatar reset](AVATAR.md) for a separately
+reviewed complete no-photo reset. No custom image, plugin or polling is needed.
+
 Power-saver on battery, balanced on mains. Blur/shadows/VRR off; short animations
 on. All five Noctalia monitor poll intervals zero; weather/calendar/dock/desktop
 widgets/wallpaper automation off. Lock at 10 minutes, screen off at 11; automatic

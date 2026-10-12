@@ -117,11 +117,12 @@ class Deployment(unittest.TestCase):
     def test_render_is_portable_and_preserves_state(self):
         state = self.home / ".local/state/noctalia/settings.toml"
         state.parent.mkdir(parents=True)
-        state.write_text('[target_private]\npreference="keep-local"\n[theme]\nmode="light"\n')
+        state.write_text('[target_private]\npreference="keep-local"\n[theme]\nmode="light"\n[shell]\navatar_path="/target-only/photo.png"\n')
         result = installer.render(self.home, host(), self.home / "wallpaper.png")
         rendered = tomllib.loads(result[".local/state/noctalia/settings.toml"].decode())
         self.assertEqual(rendered["target_private"]["preference"], "keep-local")
         self.assertEqual(rendered["theme"]["mode"], "dark")
+        self.assertEqual(rendered["shell"]["avatar_path"], "")
         self.assertIn(b"eDP-7", result[".config/hypr/config/host.lua"])
         self.assertNotIn(b"0000:00:02.0", b"\n".join(result.values()))
         self.assertFalse((self.home / ".config").exists())

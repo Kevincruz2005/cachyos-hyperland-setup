@@ -23,9 +23,10 @@ cd cachyos-hyperland-setup
 Read [installation](docs/INSTALL.md) before applying anything. CachyOS-first;
 other distributions and untested versions stop with an agent handoff instead
 of executing guessed package commands. Never pipe downloaded scripts into sudo.
-This project is intended for public reuse, but the owner is keeping the repository
-private during preparation. Until the owner makes it public, cloning requires
-granted access. No setup/publishing command changes repository visibility.
+This project is intended for public reuse. The owner controls repository visibility;
+if it is private, cloning requires granted access. Private backups, account state
+and photos are never part of the export. No setup/publishing command changes
+repository visibility.
 
 ## What this reproduces
 
@@ -36,6 +37,7 @@ granted access. No setup/publishing command changes repository visibility.
 - Offline English-only phrase dictation, with no idle model/listener and whole-cgroup cleanup.
 - Event-driven power profiles and SDDM wallpaper synchronization; no new polling daemons.
 - Native adaptive lock-screen reference profile, with separately reviewed host-specific layout.
+- Native default/no-photo avatar preference; no personal avatar is redistributed.
 - KDE fallback, portals, networking/audio/Bluetooth and optional on-demand local AI.
 
 Current Dell tuning includes 125% display scaling, zero gaps and black active

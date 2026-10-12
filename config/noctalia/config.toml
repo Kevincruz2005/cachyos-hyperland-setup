@@ -16,6 +16,8 @@ start = [ "launcher", "clock" ]
 thickness = 35
 
 [shell]
+# Native default/account fallback; never transplant a personal avatar.
+avatar_path = ""
 font_family = "Adwaita Sans"
 popup_shadows = false
 setup_wizard_enabled = false
