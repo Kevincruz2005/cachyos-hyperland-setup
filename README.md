@@ -58,6 +58,7 @@ or session termination. Package and system-level steps require review.
 | [Migration history](docs/HISTORY.md) | Decisions and evidence, not fabricated chat history |
 | [Validation](docs/VALIDATION.md) | Verified results and outstanding hardware checks |
 | [Adaptive lock screen](docs/LOCKSCREEN.md) | Reference styling, efficient rendering and safe adaptation |
+| [Wallpaper color synchronization](docs/THEMING.md) | Native desktop templates and application/greeter limits |
 | [Coding-agent handoff](docs/AGENT_HANDOFF.md) | Adapt unsupported hardware safely |
 | [Provenance](docs/PROVENANCE.md) | Sources, licenses and publication boundaries |
 

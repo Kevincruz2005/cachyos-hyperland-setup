@@ -28,6 +28,10 @@ valid image. Login control colors retain the installed Breeze/KDE palette; only
 the wallpaper is synchronized. No root-account palette or GTK settings are changed.
 Animated formats are excluded in the portable adapter to preserve static behavior.
 
+The reference laptop has a separately staged user-owned adaptive palette
+preview. See [theming](THEMING.md) for its exact scope, test command and patch.
+It does not change this adapter's protected installation flow.
+
 If SDDM fails, use Ctrl+Alt+F3 and the recorded rollback commands. If only Hyprland
 fails, choose the retained desktop session. Never delete/reset a wallet or change
 PAM. Major KDE/Qt updates require another preview; source-hash mismatch stops.

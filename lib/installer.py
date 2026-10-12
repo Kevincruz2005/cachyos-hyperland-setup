@@ -140,8 +140,9 @@ def render(home, host, wallpaper, sddm=False):
     result[".config/qt6ct/colors/noctalia.conf"] = (ROOT / "palettes/qt6ct.conf").read_bytes()
     for generation in ("gtk-3.0", "gtk-4.0"):
         result[f".config/{generation}/noctalia.css"] = (ROOT / f'palettes/{"gtk3" if generation == "gtk-3.0" else "gtk4"}.css').read_bytes()
-        result[f".config/{generation}/colors.css"] = (ROOT / "palettes/colors.css").read_bytes()
-        result[f".config/{generation}/gtk.css"] = b'@import url("noctalia.css");\n@import url("colors.css");\n'
+        # Noctalia supplies the current palette. Do not import/export stale
+        # Breeze-generated colors.css alongside it; retain a target's file unused.
+        result[f".config/{generation}/gtk.css"] = b'@import url("noctalia.css");\n'
     appearance = json.loads((ROOT / "config/appearance.json").read_text())
     for generation in ("gtk-3.0", "gtk-4.0"):
         relative = f".config/{generation}/settings.ini"

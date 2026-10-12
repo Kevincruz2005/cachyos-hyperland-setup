@@ -1,0 +1,14 @@
+# Optional, separately reviewed integrations, NOT installed automatically.
+# Copy the corresponding templates/helper first. Requires installed Cursor/Node
+# with its bundled JSONC parser, or Firefox with the approved Pywalfox extension.
+
+[theme.templates.user.cursor_palette]
+input_path = "$XDG_CONFIG_HOME/noctalia/templates/cursor-colors.json"
+output_path = "$XDG_CONFIG_HOME/noctalia/cursor-colors.json"
+post_hook = "timeout 5s nice -n 10 node \"$HOME/.local/bin/noctalia-cursor-colors.cjs\""
+hook_async = false
+
+[theme.templates.user.firefox_palette]
+input_path = "$XDG_CONFIG_HOME/noctalia/templates/firefox-colors.json"
+output_path = "$XDG_CACHE_HOME/wal/colors.json"
+post_action = "firefox-theme"

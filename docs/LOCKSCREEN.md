@@ -2,9 +2,9 @@
 
 The reference laptop now uses Noctalia 5.2.1's native lock-screen widgets:
 the current static wallpaper, subtle surface tint, large HH:MM clock in
-`primary`, a quiet date in `on_surface_variant`, and a centered compact rounded
+`on_surface`, a quiet date in `on_surface_variant`, and a centered compact rounded
 password card. Palette roles follow the existing dark wallpaper-derived
-`m3-tonal-spot` theme. No wallpaper image, fixed accent palette or account data
+`faithful` theme. No wallpaper image, fixed accent palette or account data
 is distributed.
 
 The reviewed shape is saved in

@@ -92,11 +92,15 @@ disk_poll_seconds = 0
 mode = "dark"
 source = "wallpaper"
 builtin = "Tokyo-Night"
-wallpaper_scheme = "m3-tonal-spot"
+wallpaper_scheme = "faithful"
 
     [theme.templates]
-    builtin_ids = [ "kitty", "qt", "gtk3", "gtk4", "kcolorscheme" ]
+    builtin_ids = [ "kitty", "qt", "gtk3", "gtk4", "kcolorscheme", "hyprland" ]
     enable_community_templates = false
+
+    [theme.templates.user.desktop_palette]
+    input_path = "$XDG_CONFIG_HOME/noctalia/templates/desktop-palette.json"
+    output_path = "$XDG_CONFIG_HOME/noctalia/palette.json"
 
 [widget.clock]
 color = "secondary"

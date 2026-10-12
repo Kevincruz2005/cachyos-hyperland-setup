@@ -170,6 +170,33 @@ theme, power and package settings were not changed. A regression test guards
 against reintroducing the removed rule; all 81 isolated tests passed. Dialog
 interaction remains owner-assisted rather than claimed as an end-to-end pass.
 
+## Optional palette integrations (2026-10-12)
+
+The live Noctalia v5 configuration validated with one-shot Cursor/Firefox
+templates and a user-owned SDDM palette preview. Cursor's settings received
+73 UI color overrides from the faithful wallpaper palette; its unrelated
+auto-detect setting and `kwallet6` argv preference stayed unchanged. The
+Firefox colors payload and Noctalia native messaging manifest were created,
+but the Pywalfox extension is not installed, so Firefox theming is pending.
+No extra system/user service was enabled.
+
+The staged Breeze-derived SDDM QML initially rejected two unsupported theme
+properties. Those were removed. A second offscreen `sddm-greeter-qt6 --test-mode`
+run loaded the corrected QML and both session desktop entries; the bounded
+test ended normally by timeout. It cannot prove appearance, keyboard entry or
+authentication. The active protected theme/config checksums still match the
+pre-change backup. The owner must visually inspect the preview before any
+protected greeter deployment. All 94 isolated tests and the publication scan
+passed; the generated shared palette validated.
+
+NVIDIA graphics/audio were both runtime-suspended just after the initial
+palette refresh. After the offscreen greeter tests, graphics was repeatedly
+`active` while audio was `suspended`; Hyprland held `/dev/nvidia0`,
+`/dev/nvidiactl` and the NVIDIA DRM card. The cause was not isolated, so this
+turn does **not** establish unchanged idle power or reliable graphics runtime
+suspend. No renderer override or GPU service change was made. Re-test on an
+otherwise settled desktop before claiming battery optimization.
+
 ## Matched A/B procedure
 
 Use the same brightness, actual refresh rate, power profile, radios, keyboard

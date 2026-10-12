@@ -123,6 +123,9 @@ class Deployment(unittest.TestCase):
         self.assertEqual(rendered["target_private"]["preference"], "keep-local")
         self.assertEqual(rendered["theme"]["mode"], "dark")
         self.assertEqual(rendered["shell"]["avatar_path"], "")
+        for generation in ("gtk-3.0", "gtk-4.0"):
+            self.assertNotIn("colors.css", result[f".config/{generation}/gtk.css"].decode())
+            self.assertNotIn(f".config/{generation}/colors.css", result)
         self.assertIn(b"eDP-7", result[".config/hypr/config/host.lua"])
         self.assertNotIn(b"0000:00:02.0", b"\n".join(result.values()))
         self.assertFalse((self.home / ".config").exists())

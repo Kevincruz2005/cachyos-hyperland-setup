@@ -18,6 +18,7 @@ if "libgtk4-layer-shell.so" not in os.environ.get("LD_PRELOAD", ""):
 import shutil
 import json
 import tempfile
+import re
 import subprocess
 import signal
 import time
@@ -41,6 +42,34 @@ def logical_to_image_rect(x, y, w, h, image_w, image_h, view_w, view_h):
     right = max(left, min(image_w, ceil((x + w) * sx)))
     bottom = max(top, min(image_h, ceil((y + h) * sy)))
     return left, top, right - left, bottom - top
+
+def load_screenshot_palette(path=None):
+    """Read one native-generated palette at invocation; no watcher or subprocess."""
+    neutral = {
+        "primary": "#dddddd", "on_primary": "#202020",
+        "secondary": "#c6c6c6", "on_secondary": "#202020",
+        "surface": "#202020", "on_surface": "#eeeeee",
+        "surface_variant": "#303030", "on_surface_variant": "#bcbcbc",
+        "outline": "#757575", "hover": "#363636", "on_hover": "#eeeeee",
+    }
+    if path is None:
+        config_dir = os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config")
+        path = os.path.join(config_dir, "noctalia", "palette.json")
+    try:
+        with open(path, "r", encoding="utf-8") as stream:
+            payload = stream.read(8193)
+        if len(payload) > 8192:
+            return neutral
+        values = json.loads(payload)
+        if not isinstance(values, dict):
+            return neutral
+        if not all(isinstance(values.get(key), str) and
+                   re.fullmatch(r"#[0-9a-fA-F]{6}", values[key]) for key in neutral):
+            return neutral
+        return {key: values[key] for key in neutral}
+    except (OSError, ValueError):
+        return neutral
+
 
 class OCRJob:
     """One-shot local CPU OCR. No startup work, server, GPU or transcript archive."""
@@ -96,6 +125,11 @@ class OCRJob:
 class ScreenshotApp:
     def __init__(self, gtk_app):
         self.app = gtk_app
+        self.palette = load_screenshot_palette()
+        self.paint_colors = {
+            key: tuple(int(value[index:index + 2], 16) / 255 for index in (1, 3, 5))
+            for key, value in self.palette.items()
+        }
         self.ocr_job = None
         self.ocr_timer = None
         self.app.connect("shutdown", lambda *_: self.cleanup())
@@ -185,34 +219,37 @@ class ScreenshotApp:
         self.win.present()
 
     def apply_css(self):
-        css = b"""
+        definitions = "\n".join(
+            f"@define-color snip_{key} {value};" for key, value in self.palette.items()
+        )
+        css = definitions.encode("ascii") + b"\n" + b"""
         .decision-card {
-            background-color: rgba(22, 24, 34, 0.95);
-            border: 1px solid rgba(122, 162, 247, 0.35);
+            background-color: alpha(@snip_surface, 0.97);
+            border: 1px solid alpha(@snip_outline, 0.75);
             border-radius: 12px;
             padding: 24px 28px;
         }
         .decision-title {
             font-size: 19px;
             font-weight: 600;
-            color: #c0caf5;
+            color: @snip_on_surface;
             margin-bottom: 2px;
         }
         .decision-sub {
             font-size: 13px;
-            color: #a9b1d6;
+            color: @snip_on_surface_variant;
             margin-bottom: 14px;
         }
         .preview-box {
-            border: 1px solid rgba(122, 162, 247, 0.3);
+            border: 1px solid alpha(@snip_outline, 0.5);
             border-radius: 10px;
-            background-color: #101417;
+            background-color: @snip_surface_variant;
             padding: 4px;
             margin-bottom: 18px;
         }
         .btn-copy {
-            background-color: #3d59a1;
-            color: #ffffff;
+            background-color: @snip_secondary;
+            color: @snip_on_secondary;
             font-size: 13px;
             font-weight: 600;
             border-radius: 6px;
@@ -220,11 +257,12 @@ class ScreenshotApp:
             border: none;
         }
         .btn-copy:hover {
-            background-color: #4872c0;
+            background-color: @snip_hover;
+            color: @snip_on_hover;
         }
         .btn-save {
-            background-color: #7aa2f7;
-            color: #1a1b26;
+            background-color: @snip_primary;
+            color: @snip_on_primary;
             font-size: 13px;
             font-weight: 600;
             border-radius: 6px;
@@ -232,19 +270,19 @@ class ScreenshotApp:
             border: none;
         }
         .btn-save:hover {
-            background-color: #89b4fa;
+            background-color: alpha(@snip_primary, 0.88);
         }
         .btn-cancel {
-            background-color: rgba(255, 255, 255, 0.08);
-            color: #a9b1d6;
+            background-color: @snip_surface_variant;
+            color: @snip_on_surface_variant;
             font-size: 13px;
             border-radius: 6px;
             padding: 10px 16px;
-            border: 1px solid rgba(255, 255, 255, 0.12);
+            border: 1px solid alpha(@snip_outline, 0.5);
         }
         .btn-cancel:hover {
-            background-color: rgba(255, 255, 255, 0.16);
-            color: #ffffff;
+            background-color: @snip_hover;
+            color: @snip_on_hover;
         }
         """
         provider = Gtk.CssProvider()
@@ -252,6 +290,9 @@ class ScreenshotApp:
         Gtk.StyleContext.add_provider_for_display(
             Gdk.Display.get_default(), provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
         )
+
+    def paint_color(self, cr, role, alpha=1.0):
+        cr.set_source_rgba(*self.paint_colors[role], alpha)
 
     def paint_capture(self, cr, width, height):
         # Cairo image pixels are not GTK logical coordinates. Fit to the actual
@@ -281,16 +322,16 @@ class ScreenshotApp:
 
             # Rounded pill background
             self.draw_rounded_rect(cr, banner_x, banner_y, banner_w, banner_h, 21)
-            cr.set_source_rgba(0.08, 0.09, 0.13, 0.92)
+            self.paint_color(cr, "surface", 0.94)
             cr.fill_preserve()
-            cr.set_source_rgba(0.48, 0.64, 0.97, 0.75)
+            self.paint_color(cr, "primary", 0.75)
             cr.set_line_width(1.5)
             cr.stroke()
 
             # Banner text
             cr.select_font_face("JetBrainsMono Nerd Font", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_BOLD)
             cr.set_font_size(13.5)
-            cr.set_source_rgb(0.9, 0.93, 1.0)
+            self.paint_color(cr, "on_surface")
             text = "Drag to select   |   [F] Full screen   |   [Esc] Cancel"
             ext = cr.text_extents(text)
             cr.move_to(banner_x + (banner_w - ext.width) / 2, banner_y + (banner_h + ext.height) / 2 - 2)
@@ -312,7 +353,7 @@ class ScreenshotApp:
                     cr.restore()
 
                     # Selection border
-                    cr.set_source_rgb(0.48, 0.64, 0.97)  # #7aa2f7
+                    self.paint_color(cr, "primary")
                     cr.set_line_width(2.0)
                     cr.rectangle(rx, ry, rw, rh)
                     cr.stroke()
@@ -329,9 +370,9 @@ class ScreenshotApp:
                     badge_x = rx + 8
                     badge_y = ry - 28 if ry > 35 else ry + rh + 8
                     self.draw_rounded_rect(cr, badge_x, badge_y, badge_w, badge_h, 6)
-                    cr.set_source_rgba(0.08, 0.09, 0.13, 0.9)
+                    self.paint_color(cr, "surface", 0.95)
                     cr.fill()
-                    cr.set_source_rgb(0.8, 0.9, 1.0)
+                    self.paint_color(cr, "on_surface")
                     cr.move_to(badge_x + 8, badge_y + 15)
                     cr.show_text(dim_text)
 
@@ -349,7 +390,7 @@ class ScreenshotApp:
                 self.paint_capture(cr, width, height)
                 cr.restore()
 
-                cr.set_source_rgb(0.48, 0.64, 0.97)
+                self.paint_color(cr, "primary")
                 cr.set_line_width(2.0)
                 cr.rectangle(rx, ry, rw, rh)
                 cr.stroke()

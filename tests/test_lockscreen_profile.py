@@ -21,7 +21,7 @@ class LockscreenProfile(unittest.TestCase):
             self.assertEqual(settings['clock_style'], 'digital')
             self.assertFalse(settings['background'])
             self.assertFalse(settings['shadow'])
-            self.assertIn(settings['color'], ('primary', 'on_surface_variant'))
+            self.assertIn(settings['color'], ('on_surface', 'on_surface_variant'))
             for seconds in ('%S', '%T', '%X'):
                 self.assertNotIn(seconds, settings['format'])
 

@@ -50,10 +50,18 @@ The normal clipboard owner may remain to serve copied text; it is not an OCR wor
 Fractional scaling preserves original pixels. One-output
 capture is tested; mixed-scale multi-output layouts are not claimed supported.
 
-Appearance: dynamic dark m3-tonal-spot colors from a static wallpaper; GTK/Qt/
+Appearance: dynamic dark faithful colors from a static wallpaper; GTK/Qt/
 Kitty templates; Dolphin's explicit noctalia selection with a case-compatible
 Noctalia.colors alias. Adwaita Sans shell, JetBrainsMono Nerd Font 12pt Kitty,
 opaque background, no blinking cursor/bell, 10,000 scrollback lines.
+
+The native template engine also supplies Hyprland border/group colors and a
+small shared palette for the screenshot interface. Screenshot CSS and crop
+borders read that palette only when invoked; there is no theme watcher or
+background helper. The lock-screen clock uses neutral on_surface text instead
+of an accent. Switching to another Noctalia palette regenerates the same outputs.
+Apps that cache colors may need reopening; websites/editor themes and SDDM's
+protected greeter palette are separate from desktop GTK/Qt theming.
 
 Avatar: the profile sets `[shell].avatar_path = ""`, using Noctalia's native
 default/account fallback instead of exporting a personal photo. With no account
