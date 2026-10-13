@@ -1,0 +1,77 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+"""One-shot, passive NVIDIA runtime-power check. Never opens a GPU device."""
+
+import argparse
+from pathlib import Path
+
+
+def read(path):
+    try:
+        return path.read_text().strip()
+    except (OSError, UnicodeError):
+        return None
+
+
+def inspect(sysroot=Path("/sys"), procroot=Path("/proc")):
+    pci = sysroot / "bus/pci/devices"
+    if not pci.is_dir():
+        return "unknown", "PCI power state is unavailable."
+
+    graphics = []
+    for device in sorted(pci.iterdir()):
+        if read(device / "vendor") != "0x10de":
+            continue
+        try:
+            is_display = int(read(device / "class") or "", 16) >> 16 == 3
+        except ValueError:
+            is_display = False
+        if is_display:
+            graphics.append(device)
+
+    if not graphics:
+        return "unknown", "No NVIDIA display GPU was detected."
+
+    results = []
+    for gpu in graphics:
+        slot = gpu.name.rsplit(".", 1)[0]
+        functions = sorted(pci.glob(slot + ".*"))
+        states = [(read(fn / "power/runtime_status"), read(fn / "power_state")) for fn in functions]
+        if not states or any(None in pair for pair in states):
+            results.append(("unknown", gpu.name + ": power state unavailable"))
+            continue
+        if all(runtime == "suspended" and pci_state == "D3cold" for runtime, pci_state in states):
+            detail = "D3cold; all PCI functions suspended"
+            power = read(procroot / "driver/nvidia/gpus" / gpu.name / "power")
+            if power is not None:
+                memory = next((line.split(":", 1)[1].strip() for line in power.splitlines()
+                               if line.startswith("Video Memory:")), None)
+                if memory is not None:
+                    detail += "; video memory " + memory.lower()
+            results.append(("asleep", gpu.name + ": " + detail))
+        elif any(runtime == "active" or pci_state == "D0" for runtime, pci_state in states):
+            results.append(("awake", gpu.name + ": awake now (a monitor, app, or display may be using it)"))
+        else:
+            results.append(("unknown", gpu.name + ": not confirmed in D3cold"))
+
+    if all(state == "asleep" for state, _ in results):
+        overall = "asleep"
+    elif any(state == "awake" for state, _ in results):
+        overall = "awake"
+    else:
+        overall = "unknown"
+    return overall, "; ".join(message for _, message in results)
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--sysroot", type=Path, default=Path("/sys"), help=argparse.SUPPRESS)
+    parser.add_argument("--procroot", type=Path, default=Path("/proc"), help=argparse.SUPPRESS)
+    args = parser.parse_args()
+    state, detail = inspect(args.sysroot, args.procroot)
+    print(state)
+    print(detail)
+
+
+if __name__ == "__main__":
+    main()

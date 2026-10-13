@@ -19,26 +19,32 @@ def main():
         return 0
     with tempfile.TemporaryDirectory(prefix="desktop-export-validation-") as name:
         base = Path(name)
-        home, backup = base / "isolated-home", base / "backup"
-        home.mkdir()
-        backup.mkdir()
-        host = {"display": {"output": "eDP-7", "mode": "2560x1600@60.00", "scale": "auto"}}
-        snapshot_and_write(home, render(home, host, base / "wallpaper.png", sddm=True), backup)
-        env = {**os.environ, "HOME": str(home), "XDG_CONFIG_HOME": str(home / ".config"),
-               "XDG_STATE_HOME": str(home / ".local/state"), "XDG_DATA_HOME": str(home / ".local/share"),
-               "XDG_CACHE_HOME": str(base / "cache")}
-        commands = [
-            ["Hyprland", "--verify-config", "--config", str(home / ".config/hypr/hyprland.lua")],
-            ["noctalia", "config", "validate", str(home / ".config/noctalia")],
-            ["noctalia", "config", "validate", str(home / ".local/state/noctalia/settings.toml")],
-            ["noctalia", "config", "validate", str(ROOT / "profiles/lockscreen-reference.toml")],
-        ]
-        for command in commands:
-            result = subprocess.run(command, cwd=home / ".config/hypr", env=env, capture_output=True, text=True, timeout=30)
-            print("$ " + " ".join(command[:3]))
-            print((result.stdout + result.stderr).strip())
-            if result.returncode:
-                return result.returncode
+        for variant in ("generic", "nvidia"):
+            home, backup = base / variant / "isolated-home", base / variant / "backup"
+            home.mkdir(parents=True)
+            backup.mkdir()
+            host = {"display": {"output": "eDP-7", "mode": "2560x1600@60.00", "scale": "auto"},
+                    "gpus": [{"vendor": "0x10de"}] if variant == "nvidia" else []}
+            snapshot_and_write(home, render(home, host, base / "wallpaper.png", sddm=True), backup)
+            env = {**os.environ, "HOME": str(home), "XDG_CONFIG_HOME": str(home / ".config"),
+                   "XDG_STATE_HOME": str(home / ".local/state"), "XDG_DATA_HOME": str(home / ".local/share"),
+                   "XDG_CACHE_HOME": str(base / variant / "cache")}
+            commands = [
+                ["Hyprland", "--verify-config", "--config", str(home / ".config/hypr/hyprland.lua")],
+                ["noctalia", "config", "validate", str(home / ".config/noctalia")],
+                ["noctalia", "config", "validate", str(home / ".local/state/noctalia/settings.toml")],
+            ]
+            if variant == "generic":
+                commands.append(["noctalia", "config", "validate", str(ROOT / "profiles/lockscreen-reference.toml")])
+            else:
+                commands.append(["noctalia", "plugins", "lint", str(home / ".local/share/noctalia/plugins/gpu-status")])
+            for command in commands:
+                result = subprocess.run(command, cwd=home / ".config/hypr", env=env,
+                                        capture_output=True, text=True, timeout=30)
+                print("$ " + " ".join(command[:3]))
+                print((result.stdout + result.stderr).strip())
+                if result.returncode:
+                    return result.returncode
     print("Native offline config validation passed. No live reload, UI, microphone or compositor started.")
     return 0
 

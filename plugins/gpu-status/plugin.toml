@@ -1,0 +1,12 @@
+id = "kevincruz2005/gpu-status"
+name = "NVIDIA Runtime Status"
+version = "1.0.0"
+plugin_api = 24
+author = "Kevincruz2005"
+license = "MIT"
+icon = "device-desktop"
+description = "One-click, passive NVIDIA PCI power-state check; no monitoring loop."
+
+[[shortcut]]
+id = "check"
+entry = "check.luau"

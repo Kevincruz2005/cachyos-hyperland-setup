@@ -197,6 +197,21 @@ turn does **not** establish unchanged idle power or reliable graphics runtime
 suspend. No renderer override or GPU service change was made. Re-test on an
 otherwise settled desktop before claiming battery optimization.
 
+## On-demand RTX status tile (2026-10-13)
+
+The local Noctalia v5 shortcut and passive sysfs helper passed plugin lint,
+native config validation, and synthetic PCI-function tests. Live Noctalia 5.2.1
+listed the plugin as enabled and logged the shortcut instantiating when Control
+Center opened; Hyprland stayed running with no config errors. Both NVIDIA
+functions were observed `suspended` in `D3cold` and video memory `Off` after
+deployment. The helper started no persistent process, and no driver, service,
+display manager, or boot setting was changed. The owner clicked the tile and
+received an "NVIDIA awake" notification. That is a valid instantaneous result.
+Two later passive samples found both NVIDIA functions back in `D3cold`; their
+active-time counters did not increase between samples while suspended-time
+counters did. The cause of the brief wake is unconfirmed. This check is not a
+battery-life measurement or evidence that NVIDIA never wakes briefly.
+
 ## Matched A/B procedure
 
 Use the same brightness, actual refresh rate, power profile, radios, keyboard

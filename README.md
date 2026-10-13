@@ -36,6 +36,7 @@ repository visibility.
 - Interactive Print Screen crop/preview/copy/save and on-demand English text OCR, with fractional-scale fixes.
 - Offline English-only phrase dictation, with no idle model/listener and whole-cgroup cleanup.
 - Event-driven power profiles and SDDM wallpaper synchronization; no new polling daemons.
+- On NVIDIA hosts, a one-click, read-only Noctalia Control Center RTX power-state check; no live GPU-off switch or monitoring loop.
 - Native adaptive lock-screen reference profile, with separately reviewed host-specific layout.
 - Native default/no-photo avatar preference; no personal avatar is redistributed.
 - KDE fallback, portals, networking/audio/Bluetooth and optional on-demand local AI.

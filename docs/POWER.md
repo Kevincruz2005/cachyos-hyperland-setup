@@ -8,6 +8,22 @@ address or card number into a portable setting.
 DRM connector ownership and real modes. Runtime PM reads are passive sysfs
 reads; never continuously refresh nvidia-smi while testing idle suspend.
 
+On NVIDIA hosts, the local `kevincruz2005/gpu-status` Noctalia plugin replaces
+the default Caffeine shortcut tile with **Check RTX**. The Caffeine feature is
+not uninstalled. Clicking the tile invokes `~/.local/bin/gpu-runtime-status`
+once, reads each NVIDIA PCI function's `runtime_status` and `power_state`, and
+reports `D3cold` only when every function is suspended. If available, it also
+reports the NVIDIA driver's video-memory state. Noctalia's hardware monitor
+remains disabled and the tile does not start a timer or background service.
+It does not measure watts or disable PRIME. btop's own NVIDIA monitoring can
+wake the GPU while btop is open; its configuration is left unchanged.
+
+For recovery, restore the backed-up Noctalia config/state, disable the local
+plugin, and remove only its two installed files and the helper. No kernel,
+driver, display-manager, Hyprland, or boot configuration participates in this
+feature. If custom Control Center tiles do not include the Caffeine slot, the
+installer stops for review instead of replacing another tile.
+
 After manual login, verify normal renderer and Hyprland use Intel; run a short
 PRIME renderer test, close it, allow settling and verify **all** relevant NVIDIA
 functions return to suspended. Investigate device holders if they do not.

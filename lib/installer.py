@@ -169,6 +169,33 @@ def render(home, host, wallpaper, sddm=False):
     # Do not transplant output-specific lock widget positions or private service settings.
     relative = ".local/state/noctalia/settings.toml"
     additions = tomllib.loads((ROOT / "config/noctalia/config.toml").read_text())
+    if any(gpu.get("vendor") == "0x10de" for gpu in host.get("gpus", [])):
+        # A local, read-only plugin. Do not displace a target's customized tiles.
+        user_config = checked_target(home, ".config/noctalia/config.toml")
+        user_settings = checked_target(home, relative)
+        config_data = tomllib.loads(user_config.read_text()) if user_config.exists() else {}
+        state_data = tomllib.loads(user_settings.read_text()) if user_settings.exists() else {}
+        current_tiles = state_data.get("control_center", {}).get(
+            "shortcuts", config_data.get("control_center", {}).get("shortcuts"))
+        if current_tiles is None:
+            current_tiles = [{"type": name} for name in
+                             ("wifi", "bluetooth", "caffeine", "nightlight", "notification", "power_profile")]
+        if not isinstance(current_tiles, list) or not all(isinstance(tile, dict) for tile in current_tiles):
+            raise RuntimeError("Noctalia shortcut state needs manual review.")
+        if not any(tile.get("type") in ("caffeine", "kevincruz2005/gpu-status:check") for tile in current_tiles):
+            raise RuntimeError("No Caffeine shortcut tile to replace; review custom Noctalia shortcuts manually.")
+        additions["control_center"] = {"shortcuts": [
+            {**tile, "type": "kevincruz2005/gpu-status:check"} if tile.get("type") == "caffeine" else tile
+            for tile in current_tiles]}
+        current_plugins = state_data.get("plugins", {}).get(
+            "enabled", config_data.get("plugins", {}).get("enabled", []))
+        if not isinstance(current_plugins, list) or not all(isinstance(item, str) for item in current_plugins):
+            raise RuntimeError("Noctalia plugin state needs manual review.")
+        additions["plugins"] = {"enabled": list(dict.fromkeys(current_plugins + ["kevincruz2005/gpu-status"]))}
+        result[".local/bin/gpu-runtime-status"] = (ROOT / "tools/gpu-runtime-status").read_bytes()
+        for filename in ("plugin.toml", "check.luau"):
+            result[".local/share/noctalia/plugins/gpu-status/" + filename] = (
+                ROOT / "plugins/gpu-status" / filename).read_bytes()
     additions["config_version"] = 14
     additions["wallpaper"]["default"]["path"] = str(wallpaper)
     additions["lockscreen_widgets"] = {"enabled": False}
