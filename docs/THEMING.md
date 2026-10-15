@@ -74,16 +74,19 @@ other computers may lack Cursor or use a different Firefox profile layout.
 Check that exact host first, preserve its current preferences, then enable the
 appropriate fragments and call `noctalia msg templates-apply`.
 
-The SDDM candidate is a user-owned copy of the installed working Breeze-based
+The reference SDDM theme is a copy of the installed working Breeze-based
 theme with only eight Kirigami palette bindings added to `Main.qml`. A Noctalia
 template writes a readable color INI into the existing user-owned
 `/var/lib/sddm-wallpaper-sync/<user>/` directory on palette changes. The staged
-`theme.conf.user` points at that generated file. This directory already serves
-the SDDM wallpaper; no extra daemon is added. An offscreen
-`sddm-greeter-qt6 --test-mode` loaded it with both session entry files present,
-but this cannot establish visual quality or authentication. The active
-`/usr/share/sddm/themes/breeze-static-noctalia` and `/etc/sddm.conf.d` are
-unchanged. `profiles/theme-integrations/sddm-palette-preview.qml.inc` records
+`theme.conf.user` and now the protected reference theme point at that generated
+file. The same directory already serves the SDDM wallpaper; no extra daemon is
+added. An offscreen
+`sddm-greeter-qt6 --test-mode` loaded the installed theme with both session
+entry files present, but this cannot establish visual quality or authentication.
+The protected reference `Main.qml` and `theme.conf.user` changed only after a
+private backup and exact-file preflight; `/etc/sddm.conf.d`, SDDM service,
+PAM and session launchers stayed unchanged.
+`profiles/theme-integrations/sddm-palette-preview.qml.inc` records
 the optional root-item properties for the **exact reviewed** reference
 Main.qml; adapt and retest if KDE changes its theme source. Never activate an
 uninspected greeter.
@@ -95,12 +98,12 @@ sddm-greeter-qt6 --test-mode --theme "$HOME/.local/share/noctalia/sddm-palette-p
 ```
 
 Close the preview without authenticating, then verify the password form,
-wallpaper, clock and both session choices. Deploying a protected login theme
-is a separate step after that check, with a recorded rollback and no automatic
-session termination. The current login keeps its known working colors. The
-preview lives under the owner's nontraversable home directory and must not be
-selected as the live SDDM theme. A future protected deployment would use a
-separately reviewed system theme and point its color INI at the public file.
+wallpaper, clock and both session choices. The preview lives under the owner's
+nontraversable home directory and must never be selected as the live SDDM path.
+On a different host, protected deployment requires its own backup, compatible
+theme source, preview, rollback and owner approval; the portable installer does
+not activate this optional palette binding. Noctalia's lock layout is separate
+from SDDM's Breeze login layout.
 
 Private checkpoint on the reference laptop:
 `~/theme-apps-backup-20261012-0IOsNE` (never publish or modify). To recover
@@ -109,16 +112,22 @@ the original `Cursor/settings.json` as a reference. Disable the corresponding
 Noctalia user templates, preserving newer wallpaper and editor choices.
 For Firefox, deactivate/remove the add-on in Firefox; Noctalia's own manifest
 can be removed with `noctalia firefox-theme uninstall` after inspecting it.
-No SDDM rollback is needed while the theme remains a user-owned preview.
+The later protected SDDM change has its own separate private checkpoint and
+exact-file rollback helper. Do not use the older application-theme backup to
+restore SDDM.
 
 ## Limits
 
 GTK/Qt integration does not recolor arbitrary web content or application-managed
 editor syntax themes. Apps that cache colors may require a manual reopen.
 
-SDDM still uses the existing working static Breeze-derived greeter. Wallpaper
-sync continues. Its new palette candidate remains staged for visual review;
-its protected colors remain the current working ones.
+SDDM still uses the working Breeze-derived greeter and last synced static
+wallpaper. On the reference laptop its controls now read the persisted Noctalia
+palette at greeter startup. This is event-driven: changing a wallpaper in
+Noctalia updates the saved image and color file, while boot uses the last saved
+values. It does not run Noctalia or a polling service at the login screen.
+Other computers retain the portable adapter's default Breeze controls until a
+separately reviewed protected deployment.
 
 ## Validation and recovery
 

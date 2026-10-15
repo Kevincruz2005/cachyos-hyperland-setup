@@ -24,13 +24,16 @@ for rollback. Reboot/login tests are always manual.
 User wallpaper sync writes only a per-user raster image, not privileged config.
 Noctalia's wallpaper_changed hook runs it once for the generated primary output.
 Atomic copy, size/MIME checks, lock and unchanged-image skip preserve the last
-valid image. Login control colors retain the installed Breeze/KDE palette; only
-the wallpaper is synchronized. No root-account palette or GTK settings are changed.
+valid image. The portable adapter retains the installed Breeze/KDE control
+palette; only the wallpaper is synchronized. On the reference laptop, a
+separately approved visual-only protected theme now reads a persisted Noctalia
+palette file on greeter startup. No root-account palette or GTK settings changed.
 Animated formats are excluded in the portable adapter to preserve static behavior.
 
-The reference laptop has a separately staged user-owned adaptive palette
-preview. See [theming](THEMING.md) for its exact scope, test command and patch.
-It does not change this adapter's protected installation flow.
+The reference laptop retains a user-owned adaptive palette preview alongside
+the now-active visual binding. See [theming](THEMING.md) for its exact scope,
+test command and patch. It does not change this adapter's protected installation
+flow on other machines.
 
 If SDDM fails, use Ctrl+Alt+F3 and the recorded rollback commands. If only Hyprland
 fails, choose the retained desktop session. Never delete/reset a wallet or change

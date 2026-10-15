@@ -89,6 +89,26 @@ GPU routing change was added. The single-command installer wraps the existing
 audited/interactive deployment and has not undergone a fresh-VM package/login
 end-to-end test.
 
+## SDDM adaptive palette activation (2026-10-15)
+
+After an owner-approved visual-only change, the reference SDDM Breeze-derived
+theme's `Main.qml` contains the same eight Kirigami palette bindings as the
+pretested user-owned candidate. Its `theme.conf.user` resolves to the
+event-generated, greeter-readable Noctalia wallpaper/color INI. A fresh private
+backup of the active theme, SDDM configuration, both session entries, current
+wallpaper/palette and relevant Noctalia settings was checked before deployment.
+Only those two protected theme files changed; SDDM remained active and enabled,
+and both Hyprland (UWSM) and Plasma entries were still present afterward.
+
+The SDDM account could read the palette. The installed theme ran for an
+eight-second offscreen `sddm-greeter-qt6 --test-mode` interval with no reported
+errors, then exited by the test timeout. This does not verify visual quality,
+password authentication, actual boot login or later wallpaper changes. Those
+remain owner-assisted; no restart, logout, lock, suspend or reboot was triggered.
+The Noctalia lock layout and authentication were not changed. A private
+exact-file rollback helper and pre-change checkpoint remain local to
+the reference machine, not in the public export.
+
 ## English-only dictation update
 
 The owner subsequently chose English-only Tiny.en q5_1 with explicit language

@@ -1,4 +1,4 @@
-// Preview-only root-item properties. Insert after Kirigami.Theme.inherit: false
+// Optional reference root-item properties. Insert after Kirigami.Theme.inherit: false
 // in the EXACT reviewed Breeze-derived Main.qml, then test before activation.
 Kirigami.Theme.backgroundColor: config.noctaliaSurface || "#1f1f1f"
 Kirigami.Theme.alternateBackgroundColor: config.noctaliaSurfaceVariant || "#292929"
