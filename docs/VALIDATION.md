@@ -66,10 +66,28 @@ is not a matched A/B benchmark.
 - [ ] Matched KDE/Hyprland power samples exist before any KDE removal recommendation.
 - [ ] Real microphone and English-only dictation accuracy are accepted.
 - [ ] Super+H off-state has no dictation unit/process/cgroup/runtime recordings.
+- [ ] Helium launches with Super+B, is the default URL browser and file picker works.
+- [ ] Kamoso previews the camera; closing it releases the camera on this hardware.
 
 `./setup verify` only gathers observable configuration/power state and prints the
 remaining manual checks. It does not trigger microphones, suspend, lock or GPU
 benchmarks. Retain KDE while any important item is uncertain.
+
+## Browser and camera export (2026-10-15)
+
+The reference machine reports official CachyOS `helium-browser-bin` 0.19.2.1-1
+and `kamoso` 26.08.2-1.1 installed. Live Super+B launches `helium-browser`,
+while Super+W still launches Brave. The UWSM `BROWSER` and web MIME defaults
+point to Helium. The portable package/configuration export now matches those
+choices and includes the English OCR packages required by Print Screen's O key.
+
+A prior live Kamoso test opened the webcam and closing the window released it;
+PipeWire is retained for normal AV services. This is not a cross-machine
+guarantee. Helium launch, browser portals and real camera behavior remain
+owner-assisted checks on a fresh target. No camera-only daemon/autostart or
+GPU routing change was added. The single-command installer wraps the existing
+audited/interactive deployment and has not undergone a fresh-VM package/login
+end-to-end test.
 
 ## English-only dictation update
 

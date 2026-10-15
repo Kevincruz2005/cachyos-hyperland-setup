@@ -7,7 +7,7 @@ OPEN THINGS
   Super + Shift + Enter   Kitty terminal (floating centered)
   Ctrl + Alt + T          Kitty terminal (alternative)
   Super + E               Dolphin file manager
-  Super + B               Firefox browser
+  Super + B               Helium browser
   Super + W               Brave browser
   Super + T               Text editor
   Calculator key          Calculator (Super + C also works)

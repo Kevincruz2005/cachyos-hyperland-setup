@@ -11,8 +11,9 @@ The reviewed shape is saved in
 [`profiles/lockscreen-reference.toml`](../profiles/lockscreen-reference.toml).
 It is outside the automatically deployed configuration on purpose. Its connector
 and positions describe the detected Dell panel, not an arbitrary clone's machine.
-The main installer's whole-stack 5.2.0 version gate remains unchanged: validating
-this 5.2.1 lock-screen profile does not qualify every installer operation on 5.2.1.
+The main installer now accepts Noctalia 5.2.0 and 5.2.1 after native exported
+configuration validation. This reference lock-screen profile is still not
+automatically deployed on either version; its host-specific layout needs review.
 Unsupported targets must use the agent handoff, not bypass the gate or downgrade.
 
 ## Adapt safely

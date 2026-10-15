@@ -7,7 +7,7 @@ Super is the Windows/logo key. Super+F1 opens the installed complete cheat sheet
 | Super+Enter / Ctrl+Alt+T | Kitty; Shift+Super+Enter is centered floating Kitty |
 | Super+Space / R | Noctalia launcher |
 | Super+E | Dolphin, following the tiling layout |
-| Super+B / Super+W | Firefox / Brave |
+| Super+B / Super+W | Helium / Brave |
 | Calculator key / Super+C | Calculator |
 | Alt+F4 / Super+Q | Close focused app |
 | Super+F / Super+Shift+F | Maximize with app tabs / true fullscreen |
@@ -31,10 +31,15 @@ Normal Dolphin windows follow the tiling layout instead of opening as small
 cursor-positioned floating windows. Standard transient/dialog handling is
 retained; floating can still be toggled manually with Super+Alt+Space.
 
-Super+B launches Firefox through UWSM; Super+W keeps the configured browser
-(Brave in the reference setup). This does not change MIME/URL defaults or the
-session's BROWSER environment. Firefox is included in the reviewed package plan;
-the shortcut does not start a browser at login.
+Super+B launches Helium through UWSM; Super+W launches Brave from the Hyprland
+`BROWSER` variable. The UWSM session `BROWSER` and web MIME/URL defaults use
+Helium. Firefox remains installed/available, but no browser starts at login.
+The installer merges MIME defaults into the user's file with a backup; review
+this preference change before applying on another machine.
+
+Kamoso is the on-demand camera app. It adds no camera-only autostart service;
+PipeWire/WirePlumber remain for normal desktop audio/video plumbing. Closing
+the app should release the camera; check actual hardware behavior on each host.
 
 Screenshots: drag to crop, F full screen, Esc cancel; then C copies the image,
 O recognizes English text and copies it, Enter saves and copies the image,
@@ -42,8 +47,9 @@ Esc discards (or cancels active OCR). OCR is local Tesseract, started only on O,
 one CPU thread at low priority, with a 20-second hard timeout and no server,
 GPU inference or persistent OCR model. If OCR finds nothing or fails, the
 preview remains and the clipboard is unchanged; image copy/save still work.
-Requires optional official `tesseract` and `tesseract-data-eng` packages. It
-recognizes printed text, not reliably handwriting or complex reading order;
+The guided package plan includes official `tesseract` and
+`tesseract-data-eng` packages. OCR recognizes printed text, not reliably
+handwriting or complex reading order;
 use a tight, clear crop. Recognized text is not saved or shown in notifications,
 but intentionally enters the clipboard and may be retained by clipboard history.
 The normal clipboard owner may remain to serve copied text; it is not an OCR worker.

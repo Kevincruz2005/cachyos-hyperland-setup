@@ -3,11 +3,20 @@
 Read the safety contract in README and AGENTS.md. Start with an already working
 x86_64 CachyOS installation, a normal user, official repository access, working
 power-profiles-daemon, installed graphics drivers and a retained desktop fallback.
-The automatic adapter currently accepts Hyprland 0.56.2, Noctalia 5.2.0 and UWSM
-0.27.0. It does not downgrade, pin packages or force an old version to run.
+The automatic adapter currently accepts Hyprland 0.56.2, Noctalia 5.2.0 or
+5.2.1, and UWSM 0.27.0. It does not downgrade, pin packages or force an old version to run.
 For other versions/distributions, take the generated handoff to an agent.
 
 ## 1. Audit and review
+
+For a guided single-command path, run `./install.sh` from the cloned repository.
+Optionally pass `--wallpaper /absolute/path/to/static-wallpaper.png`; without it,
+a packaged fallback is used.
+The script performs the audit and plan below, then invokes the reviewed
+interactive apply with official packages and the checksummed speech model.
+Read the plan before typing `APPLY`. It stops on unsafe/unsupported hosts and
+does not select SDDM, reboot or remove the existing desktop. For manual staged
+control, use these commands instead:
 
 ```sh
 ./setup audit
@@ -62,6 +71,11 @@ running snapshot watchers, change installed hooks, GRUB or snapshot policy.
 `cachyos-kde-settings` conflict. Plasma itself is never an allowed removal.
 If a package's `.INSTALL` script requires review, use the agent handoff; do not
 edit the guard away or substitute an AUR package blindly.
+
+The guided package plan includes CachyOS's `helium-browser-bin`, `kamoso`,
+and English Tesseract OCR packages for the exported browser, camera and
+screenshot features. It does not start a browser or camera service at login.
+The proposed package transaction must still pass the normal review gate.
 
 User files are prevalidated, originals copied to a private timestamped backup,
 then replaced atomically. Installed/explicit packages, enabled system/user units,

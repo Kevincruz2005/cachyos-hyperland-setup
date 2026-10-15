@@ -1,7 +1,7 @@
 {
-  "core": ["cachyos-hypr-noctalia", "sddm", "dolphin", "firefox", "brave-bin", "gnome-calculator", "gnome-text-editor", "ttf-jetbrains-mono-nerd", "adwaita-fonts", "adw-gtk-theme", "noto-fonts", "breeze-icons", "breeze", "power-profiles-daemon", "xdg-desktop-portal-gtk", "python", "python-gobject", "python-cairo", "gtk4-layer-shell", "libnotify"],
+  "core": ["cachyos-hypr-noctalia", "sddm", "dolphin", "firefox", "brave-bin", "helium-browser-bin", "kamoso", "gnome-calculator", "gnome-text-editor", "ttf-jetbrains-mono-nerd", "adwaita-fonts", "adw-gtk-theme", "noto-fonts", "breeze-icons", "breeze", "power-profiles-daemon", "xdg-desktop-portal-gtk", "python", "python-gobject", "python-cairo", "gtk4-layer-shell", "libnotify", "tesseract", "tesseract-data-eng"],
   "dictation": ["whisper-cpp", "wtype"],
   "nvidia_existing_driver_only": ["nvidia-prime"],
-  "optional": {"ollama": ["ollama"], "hyprmod": [], "screenshot_ocr": ["tesseract", "tesseract-data-eng"]},
-  "tested_versions": {"hyprland": ["0.56.2"], "noctalia": ["5.2.0"], "uwsm": ["0.27.0"]}
+  "optional": {"ollama": ["ollama"], "hyprmod": []},
+  "tested_versions": {"hyprland": ["0.56.2"], "noctalia": ["5.2.0", "5.2.1"], "uwsm": ["0.27.0"]}
 }

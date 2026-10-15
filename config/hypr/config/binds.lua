@@ -109,7 +109,7 @@ hl.bind(mainMod .. " + SHIFT + Return", hl.dsp.exec_cmd(launchPrefix .. TERMINAL
 hl.bind("CONTROL + ALT + T",            hl.dsp.exec_cmd(launchPrefix .. TERMINAL))
 hl.bind(mainMod .. " + R",          hl.dsp.exec_cmd(noctCall .. "panel-toggle launcher"))
 hl.bind(mainMod .. " + N",          hl.dsp.exec_cmd("power-mode-cycle"))
-hl.bind(mainMod .. " + B",          hl.dsp.exec_cmd(launchPrefix .. "firefox"))
+hl.bind(mainMod .. " + B",          hl.dsp.exec_cmd(launchPrefix .. "helium-browser"))
 hl.bind(mainMod .. " + F1",         hl.dsp.exec_cmd(launchPrefix .. TERMINAL .. " --title 'Hyprland shortcuts' -e less \"$HOME/.config/hypr/SHORTCUTS.txt\""))
 hl.bind(mainMod .. " + E",          hl.dsp.exec_cmd(launchPrefix .. FILE_MANAGER))
 hl.bind(mainMod .. " + T",          hl.dsp.exec_cmd(launchPrefix .. EDITOR))

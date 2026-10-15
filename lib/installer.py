@@ -350,7 +350,7 @@ def rollback(home, backup, check_only=False):
 
 def handoff(report_dir, stage, error, backup=None):
     message = ("This setup was developed on a Dell G15 5530 (Intel i5-13450HX + NVIDIA RTX 3050), "
-               "CachyOS, Hyprland 0.56.2 / Noctalia 5.2.0 / UWSM.\n"
+               "CachyOS, Hyprland 0.56.2 / Noctalia 5.2.0 or 5.2.1 / UWSM 0.27.0.\n"
                f"Stopped at {stage}: {error}\nNo unsafe fallback was applied.\n"
                "Give a coding agent AGENTS.md, docs/AGENT_HANDOFF.md and this private report AFTER reviewing it for privacy.\n")
     report_dir.mkdir(parents=True, exist_ok=True, mode=0o700)

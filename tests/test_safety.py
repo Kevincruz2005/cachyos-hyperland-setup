@@ -206,6 +206,13 @@ class Detection(unittest.TestCase):
         value["packages"]["hyprland"] = "0.57.0-1"
         self.assertTrue(installer.blockers(value, {}))
 
+    def test_noctalia_521_accepted_but_newer_stops(self):
+        value = host()
+        value["packages"]["noctalia"] = "5.2.1-1"
+        self.assertEqual(installer.blockers(value, {}), [])
+        value["packages"]["noctalia"] = "5.2.2-1"
+        self.assertTrue(installer.blockers(value, {}))
+
     def test_conflicting_power_stack(self):
         value = host()
         value["services"]["tlp"] = "active"

@@ -30,7 +30,7 @@ case "$repo_metadata" in
 esac
 python -m unittest discover -s tests -v
 python tools/check_publication.py
-bash -n tools/power-profile.sh tools/sddm-wallpaper-sync tools/publish.sh
+bash -n install.sh tools/power-profile.sh tools/sddm-wallpaper-sync tools/publish.sh
 python tools/validate_export.py
 printf '%s\n' "Pushing reviewed main history to existing $visibility repository $repo_name."
 # Credential setup is command-local, not a global Git/account configuration change.

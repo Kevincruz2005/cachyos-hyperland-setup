@@ -16,11 +16,15 @@ This is a conservative version-gated adapter, not an unattended universal instal
 ```sh
 git clone https://github.com/Kevincruz2005/cachyos-hyperland-setup.git
 cd cachyos-hyperland-setup
-./setup audit
-./setup plan
+./install.sh
 ```
 
-Read [installation](docs/INSTALL.md) before applying anything. CachyOS-first;
+The script runs audit, shows a plan, then asks you to type `APPLY` before any
+package/configuration changes. Optionally pass `--wallpaper
+/absolute/path/to/your/static-wallpaper.png` to use your own image; the author's
+personal wallpaper is not included. SDDM selection and reboot remain separate
+manual steps. Read [installation](docs/INSTALL.md) before applying anything.
+CachyOS-first;
 other distributions and untested versions stop with an agent handoff instead
 of executing guessed package commands. Never pipe downloaded scripts into sudo.
 This project is intended for public reuse. The owner controls repository visibility;
@@ -39,6 +43,8 @@ repository visibility.
 - On NVIDIA hosts, a one-click, read-only Noctalia Control Center RTX power-state check; no live GPU-off switch or monitoring loop.
 - Native adaptive lock-screen reference profile, with separately reviewed host-specific layout.
 - Native default/no-photo avatar preference; no personal avatar is redistributed.
+- Helium as the default browser and Super+B target, with Brave on Super+W; Firefox remains available.
+- Kamoso camera on demand, without a new camera-only background service.
 - KDE fallback, portals, networking/audio/Bluetooth and optional on-demand local AI.
 
 Current Dell tuning includes 125% display scaling, zero gaps and black active
@@ -50,7 +56,9 @@ wallpaper; the image itself is not redistributed.
 
 No automatic KDE removal, kernel/driver replacement, bootloader/EFI/partition
 changes, Windows changes, TLP, global NVIDIA forcing, orphan cleanup, reboot
-or session termination. Package and system-level steps require review.
+or session termination. Package and system-level steps require review. Unsupported
+versions or hardware stop for adaptation; cloning alone cannot reproduce a
+validated hardware setup on every computer.
 
 | Guide | Purpose |
 | --- | --- |

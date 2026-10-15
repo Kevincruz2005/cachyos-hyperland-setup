@@ -1,4 +1,4 @@
-export BROWSER=brave
+export BROWSER=helium-browser
 export PATH="$HOME/.local/bin:$PATH"
 export TERMINAL=kitty
 export TERM=xterm-kitty

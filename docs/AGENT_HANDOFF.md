@@ -21,6 +21,9 @@ Suggested request:
    First try normal Intel compositing; add no GPU override if it already works.
 5. Existing TOML fragments, user preferences, desktop portal selection, idle/power
    stack, session environment and target-user permissions.
+6. Whether the target has official `helium-browser-bin` and `kamoso` packages.
+   Review package transaction and camera behavior; do not substitute an
+   unreviewed AUR browser or install a camera daemon to imitate the reference.
 
 ## Common adaptations
 

@@ -3,5 +3,5 @@
   "qt6ct": {"Appearance": {"custom_palette": "true", "icon_theme": "breeze-dark", "standard_dialogs": "gtk3", "style": "Fusion"}},
   "dolphin": {"UiSettings": {"ColorScheme": "noctalia"}},
   "kdeglobals": {"General": {"ColorScheme": "Noctalia"}, "KDE": {"LookAndFeelPackage": "org.kde.breezedark.desktop"}},
-  "mimeapps": {"Default Applications": {"x-scheme-handler/terminal": "kitty.desktop"}}
+  "mimeapps": {"Default Applications": {"x-scheme-handler/terminal": "kitty.desktop", "x-scheme-handler/http": "helium.desktop", "x-scheme-handler/https": "helium.desktop", "text/html": "helium.desktop", "application/xhtml+xml": "helium.desktop", "x-scheme-handler/about": "helium.desktop", "x-scheme-handler/unknown": "helium.desktop"}}
 }
