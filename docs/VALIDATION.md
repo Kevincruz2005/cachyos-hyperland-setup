@@ -117,8 +117,12 @@ passed `Hyprland --verify-config`; a config-only reload reported no errors.
 Readback after reload showed `cursor:zoom_factor` at 1.0, with pixel zoom,
 rigid cursor-follow and non-detached camera options active. No package, GPU
 routing, background service or polling process was added. Physical-key
-operation and subjective zoom motion remain owner-assisted checks; idle battery
-power was not measured in this configuration-only test.
+operation failed owner testing. The old Lua getter used `cursor:zoom_factor`
+rather than the documented dotted name, while the old keypad `code:` binds
+registered with keycode 0. The follow-up uses the
+documented `cursor.zoom_factor` getter, `Super+Shift+=` for the US keyboard's
+Plus key, and `KP_Add`/`KP_Subtract`. Physical-key operation still requires an
+owner check. Idle battery power was not measured in this configuration-only test.
 
 ## English-only dictation update
 

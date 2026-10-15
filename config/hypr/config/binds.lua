@@ -83,16 +83,17 @@ hl.bind(mainMod .. " + ALT + Down",  hl.dsp.window.resize({ x = 0, y = 40 }),  {
 
 -- Zoom
 local function zoomfunction(direction)
-    local zoomvalue = hl.get_config("cursor:zoom_factor")
+    local zoomvalue = hl.get_config("cursor.zoom_factor")
     local nextvalue = direction > 0 and zoomvalue * 1.5 or zoomvalue / 1.5
     hl.config({ cursor = { zoom_factor = math.max(1.0, math.min(10.0, nextvalue)) } })
 end
-hl.bind(mainMod .. " + Minus", function() zoomfunction(-1) end, { repeating = true})
-hl.bind(mainMod .. " + Plus", function() zoomfunction(1) end, { repeating = true })
+hl.bind(mainMod .. " + minus", function() zoomfunction(-1) end, { repeating = true })
+-- On a US keyboard, + is Shift+=. Bind the unshifted key with Shift explicitly.
+hl.bind(mainMod .. " + SHIFT + equal", function() zoomfunction(1) end, { repeating = true })
 
---# Zoom with keypad
-hl.bind(mainMod .. " + code:82", function() zoomfunction(-1) end, { repeating = true })
-hl.bind(mainMod .. " + code:86", function() zoomfunction(1) end, { repeating = true })
+-- Keypad symbols are layout-independent; the old code: binds registered as keycode 0.
+hl.bind(mainMod .. " + KP_Subtract", function() zoomfunction(-1) end, { repeating = true })
+hl.bind(mainMod .. " + KP_Add", function() zoomfunction(1) end, { repeating = true })
 
 
 ------------------

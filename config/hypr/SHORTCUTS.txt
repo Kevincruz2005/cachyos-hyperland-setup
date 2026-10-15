@@ -28,7 +28,7 @@ WINDOWS & WORKSPACES
   Super + F               Maximize window (keeps status bar & tabs visible)
   Super + Shift + F       True fullscreen (covers whole screen, no topbar)
   Super + D               Show desktop / return to previous apps
-  Super + Plus / Minus    Zoom around cursor in/out (1×–10×; crisp pixels)
+  Super + Shift + = / -  Zoom around cursor in/out (1×–10×; crisp pixels)
   Super + Alt + Space     Toggle floating
   Super + Shift + Space   Center floating window
   Super + O               Pin floating window (sticky on all workspaces)
