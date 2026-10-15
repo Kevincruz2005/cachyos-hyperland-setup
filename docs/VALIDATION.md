@@ -109,6 +109,17 @@ The Noctalia lock layout and authentication were not changed. A private
 exact-file rollback helper and pre-change checkpoint remain local to
 the reference machine, not in the public export.
 
+## Native cursor zoom (2026-10-15)
+
+The existing Super+Plus/Minus Hyprland callbacks now use a bounded 1×–10×
+native zoom with crisp pixels. Both the live and exported Lua configurations
+passed `Hyprland --verify-config`; a config-only reload reported no errors.
+Readback after reload showed `cursor:zoom_factor` at 1.0, with pixel zoom,
+rigid cursor-follow and non-detached camera options active. No package, GPU
+routing, background service or polling process was added. Physical-key
+operation and subjective zoom motion remain owner-assisted checks; idle battery
+power was not measured in this configuration-only test.
+
 ## English-only dictation update
 
 The owner subsequently chose English-only Tiny.en q5_1 with explicit language

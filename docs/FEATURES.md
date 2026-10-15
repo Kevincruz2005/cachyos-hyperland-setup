@@ -12,6 +12,7 @@ Super is the Windows/logo key. Super+F1 opens the installed complete cheat sheet
 | Alt+F4 / Super+Q | Close focused app |
 | Super+F / Super+Shift+F | Maximize with app tabs / true fullscreen |
 | Super+D | Show desktop / return without modifying original layout |
+| Super+Plus / Super+Minus | Cursor-following screen zoom, 1×–10× |
 | Alt+Tab / Alt+Shift+Tab | Focus next/previous; no automatic maximize |
 | Super+Tab | Visual Noctalia switcher |
 | Super+1…9 | Workspaces; Shift sends silently, Alt sends and follows |
@@ -26,6 +27,12 @@ Super is the Windows/logo key. Super+F1 opens the installed complete cheat sheet
 Three fingers up maximize; down restore. Three-finger horizontal floating is
 disabled. Four-finger horizontal switches workspaces. Tap-to-click on, natural
 scroll off, adaptive acceleration. Media/brightness keys use Noctalia actions.
+
+Screen zoom is Hyprland's native compositor feature, not a magnifier service.
+It defaults to 1×, advances quickly to 10× for crisp pixel inspection and
+returns to 1× with Super+Minus. The zoom camera follows the cursor; smoothing
+is disabled only for magnified content. There is no idle worker, but rendering
+while zoomed still uses some power. The keypad Plus/Minus keys work too.
 
 Normal Dolphin windows follow the tiling layout instead of opening as small
 cursor-positioned floating windows. Standard transient/dialog handling is

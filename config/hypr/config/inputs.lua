@@ -10,10 +10,12 @@ hl.config({
             natural_scroll = false,
         },
     },
-    -- Uncomment the section below to enable software cursors; this can help with cursor display or behavior issues
-    -- cursor = {
-    --     no_hardware_cursors = 1,
-    -- },
+    cursor = {
+        -- Native zoom only: no helper process or idle sampling.
+        zoom_disable_aa = true,
+        zoom_rigid = true,
+        zoom_detached_camera = false,
+    },
 })
 
 -- Touchpad gestures

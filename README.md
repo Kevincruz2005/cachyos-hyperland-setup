@@ -37,6 +37,7 @@ repository visibility.
 - Dark wallpaper-derived GTK/Qt/Kitty colors and Dolphin integration.
 - Adwaita Sans, JetBrainsMono Nerd Font, Bibata cursor and minimal Noctalia bar.
 - Current window/gesture shortcuts, Windows-style show desktop, maximize separate from true fullscreen.
+- Native cursor-following screen zoom up to 10×, with no idle magnifier process.
 - Interactive Print Screen crop/preview/copy/save and on-demand English text OCR, with fractional-scale fixes.
 - Offline English-only phrase dictation, with no idle model/listener and whole-cgroup cleanup.
 - Event-driven power profiles and SDDM wallpaper synchronization; no new polling daemons.
