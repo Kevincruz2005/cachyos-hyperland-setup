@@ -130,6 +130,15 @@ def render(home, host, wallpaper, sddm=False):
             if source.is_file():
                 relative = Path(".config") / family / source.relative_to(ROOT / "config" / family)
                 result[str(relative)] = source.read_bytes()
+    # The KDE editor is optional: add no broken action or new package on hosts
+    # without both the System Settings launcher and its NetworkManager KCM.
+    if {"systemsettings", "plasma-nm"} <= host.get("packages", {}).keys():
+        key = ".config/noctalia/config.toml"
+        anchor = b'[widget.network]\ncolor = "secondary"\n\n'
+        if result[key].count(anchor) != 1 or b"[widget.network.actions]" in result[key]:
+            raise RuntimeError("Noctalia network widget needs manual action review.")
+        action = b'    [widget.network.actions]\n    right = "exec systemsettings kcm_networkmanagement"\n\n'
+        result[key] = result[key].replace(anchor, anchor + action, 1)
     result[".config/hypr/config/host.lua"] = lua_host(host["display"])
     for script in ("hypr-screenshot", "hypr-dictation", "sddm-wallpaper-sync", "power-mode-cycle"):
         result[".local/bin/" + script] = (ROOT / "tools" / script).read_bytes()

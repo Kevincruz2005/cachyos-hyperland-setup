@@ -24,7 +24,8 @@ def main():
             home.mkdir(parents=True)
             backup.mkdir()
             host = {"display": {"output": "eDP-7", "mode": "2560x1600@60.00", "scale": "auto"},
-                    "gpus": [{"vendor": "0x10de"}] if variant == "nvidia" else []}
+                    "gpus": [{"vendor": "0x10de"}] if variant == "nvidia" else [],
+                    "packages": {"systemsettings": "installed", "plasma-nm": "installed"} if variant == "nvidia" else {}}
             snapshot_and_write(home, render(home, host, base / "wallpaper.png", sddm=True), backup)
             env = {**os.environ, "HOME": str(home), "XDG_CONFIG_HOME": str(home / ".config"),
                    "XDG_STATE_HOME": str(home / ".local/state"), "XDG_DATA_HOME": str(home / ".local/share"),

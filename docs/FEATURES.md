@@ -48,6 +48,14 @@ Kamoso is the on-demand camera app. It adds no camera-only autostart service;
 PipeWire/WirePlumber remain for normal desktop audio/video plumbing. Closing
 the app should release the camera; check actual hardware behavior on each host.
 
+Where KDE System Settings and plasma-nm are already installed, left-clicking
+Noctalia's network bar icon still opens its native Network panel; right-clicking
+opens the KDE Wi-Fi & Networking profile editor on demand. Select a saved
+connection to edit its name, IP, DNS, or MAC; right-click its entry and choose
+Connect to switch when the Ethernet cable is available. No editor, plugin, or
+polling worker starts at login. Machine-specific network profiles are not
+included in this repository; configure them separately on each host.
+
 Screenshots: drag to crop, F full screen, Esc cancel; then C copies the image,
 O recognizes English text and copies it, Enter saves and copies the image,
 Esc discards (or cancels active OCR). OCR is local Tesseract, started only on O,

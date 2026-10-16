@@ -134,7 +134,7 @@ def audit(sysroot=Path("/sys")):
                  if name.startswith(("linux-", "nvidia", "lib32-nvidia", "systemd", "grub", "limine"))
                  or name in ("sddm", "plasma-workspace", "plasma-desktop", "networkmanager", "pipewire", "wireplumber")}
     relevant = {name: installed[name] for name in installed if name.startswith(("hypr", "xdg-desktop-portal"))
-                or name in ("cachyos-hypr-noctalia", "cachyos-kde-settings", "noctalia", "uwsm", "whisper-cpp", "ggml", "wtype")}
+                or name in ("cachyos-hypr-noctalia", "cachyos-kde-settings", "noctalia", "uwsm", "whisper-cpp", "ggml", "wtype", "plasma-nm", "systemsettings")}
     dm = Path("/etc/systemd/system/display-manager.service")
     return {"os": os_info.get("ID", "unknown"), "architecture": os.uname().machine,
             "kernel": os.uname().release, "machine": {"vendor": vendor, "product": product},

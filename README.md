@@ -46,6 +46,7 @@ repository visibility.
 - Native default/no-photo avatar preference; no personal avatar is redistributed.
 - Helium as the default browser and Super+B target, with Brave on Super+W; Firefox remains available.
 - Kamoso camera on demand, without a new camera-only background service.
+- Optional right-click network icon shortcut to the installed KDE profile editor; no bundled network identities.
 - KDE fallback, portals, networking/audio/Bluetooth and optional on-demand local AI.
 
 Current Dell tuning includes 125% display scaling, zero gaps and black active
