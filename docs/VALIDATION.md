@@ -265,6 +265,21 @@ active-time counters did not increase between samples while suspended-time
 counters did. The cause of the brief wake is unconfirmed. This check is not a
 battery-life measurement or evidence that NVIDIA never wakes briefly.
 
+## Keyring integration correction (2026-10-21)
+
+After the separately authorized official Noctalia Greeter/greetd migration,
+optional GNOME Keyring hooks were added to the reference host's greetd and
+passwd PAM files, preserving existing authentication rules. VS Code and Cursor
+runtime settings now select `gnome-libsecret`; private argv files, keyrings and
+editor databases are not exported. See [KEYRING.md](KEYRING.md) for exact scope,
+checks, recovery boundaries and remaining manual login/editor tests.
+
+This added no package, enabled service or background monitor and did not restart
+the display manager or editors. Both NVIDIA functions were suspended at the
+verification sample. No battery benchmark or next-login auto-unlock pass is
+claimed. The generic installer remains unchanged and does not select greetd or
+modify PAM.
+
 ## Matched A/B procedure
 
 Use the same brightness, actual refresh rate, power profile, radios, keyboard

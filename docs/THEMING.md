@@ -52,8 +52,10 @@ The tested Cursor integration writes `cursor-colors.json` through Noctalia's
 native template system and runs `tools/noctalia-cursor-colors.cjs` once on a
 palette change. That helper uses Cursor's installed JSONC parser to merge only
 `workbench.colorCustomizations`. Existing settings, comments, editor font and
-syntax theme are preserved; the saved `password-store=kwallet6` backend is
-untouched. There is no editor theme daemon or login service. Hosts without
+syntax theme are preserved; the theme helper does not change the credential
+backend. The original `kwallet6` choice was later changed separately on the
+reference host; see [the authorized keyring correction](KEYRING.md). There is
+no editor theme daemon or login service. Hosts without
 Cursor and its JSONC parser should leave this optional template disabled.
 
 Firefox's optional native template emits a Pywal-compatible `colors.json` with

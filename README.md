@@ -70,6 +70,7 @@ validated hardware setup on every computer.
 | [Validation](docs/VALIDATION.md) | Verified results and outstanding hardware checks |
 | [Adaptive lock screen](docs/LOCKSCREEN.md) | Reference styling, efficient rendering and safe adaptation |
 | [Wallpaper color synchronization](docs/THEMING.md) | Native desktop templates and application/greeter limits |
+| [Encrypted application credentials](docs/KEYRING.md) | Reviewed greetd/keyring fix and editor backend selection; not automatic |
 | [Coding-agent handoff](docs/AGENT_HANDOFF.md) | Adapt unsupported hardware safely |
 | [Provenance](docs/PROVENANCE.md) | Sources, licenses and publication boundaries |
 

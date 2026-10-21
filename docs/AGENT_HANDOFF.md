@@ -38,6 +38,11 @@ Suggested request:
   or use Noctalia's native capture UI. Test every edge at fractional scaling.
 - New Breeze/KDE source requires greeter preview/adaptation. Never replace PAM,
   SDDM session launchers or an existing custom greeter silently.
+- If adapting an explicitly approved greetd deployment, inspect the existing
+  Secret Service provider and PAM stack before addressing keyring prompts.
+  [KEYRING.md](KEYRING.md) records the separately authorized reference fix;
+  the installer does not apply it or select greetd automatically. Do not reset
+  keyrings or copy private editor runtime files from the reference laptop.
 - Theme changes can collide with GTK CSS symlinks or existing Noctalia fragment
   overrides; preserve originals and inspect effective state before guessing.
 - Current Tiny.en q5_1 speech is English-only, with limited accent/noise accuracy;
