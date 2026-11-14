@@ -30,6 +30,10 @@ Suggested request:
 - Hyprland before/after this Lua API needs a reviewed API/config translation.
 - Noctalia v5 native TOML is not v4 Quickshell. Inspect schema and merged state;
   do not append duplicate sections or replace private service state.
+- The reference laptop's newer compact/MRU Alt+Tab is an opt-in
+  [version-specific profile](ALT_TAB.md), not a change to the generic installer's
+  older baseline. In 5.4.1, Shift+Tab works in the overlay but reverse-opening
+  IPC is unavailable; do not copy commands from newer docs without checking.
 - Generic/AMD hosts must not get Dell scaling, thermald or Intel PCI constants.
 - NVIDIA-wired external monitors may need a deliberate AC/external profile.
   Do not keep NVIDIA awake in internal battery mode just for an unused port.

@@ -1,0 +1,9 @@
+-- Reference: Hyprland 0.57.1 + native Noctalia 5.4.1.
+-- REPLACE the existing Alt+Tab/Alt+Shift+Tab/Super+Tab block; do not append duplicates.
+-- Existing binds.lua defines mainMod = "SUPER" and noctCall = "noctalia msg ".
+-- Native held-Alt visual switcher; no automatic maximize/fullscreen or new daemon.
+hl.bind("ALT + Tab",         hl.dsp.exec_cmd(noctCall .. "window-switcher hold"))
+-- Noctalia 5.4.1 has no reverse-opening IPC. Keep native backward entry;
+-- Shift+Tab inside the open overlay is handled by Noctalia itself.
+hl.bind("ALT + SHIFT + Tab", hl.dsp.window.cycle_next({ next = false }))
+hl.bind(mainMod .. " + Tab",   hl.dsp.exec_cmd(noctCall .. "window-switcher"))

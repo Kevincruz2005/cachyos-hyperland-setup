@@ -280,6 +280,20 @@ verification sample. No battery benchmark or next-login auto-unlock pass is
 claimed. The generic installer remains unchanged and does not select greetd or
 modify PAM.
 
+## Optional native Alt+Tab profile (2026-11-14)
+
+The reference laptop on Hyprland 0.57.1 / Noctalia 5.4.1 / UWSM 0.27.1 now
+uses `window-switcher hold`, compact styling and MRU ordering. Configuration
+validation, effective-state/bind readback and a bounded overlay open/close
+test passed with focus preserved. Disposable rollback restored the three
+original files and refused a later-edit fixture. Physical-key timing and owner
+acceptance remain manual; no power benchmark was performed. No package, daemon,
+GPU/power/theme/login change accompanied this profile.
+
+See [ALT_TAB.md](ALT_TAB.md) and its two opt-in profile fragments. The generic
+installer/version gates are unchanged; public copies contain no private backup
+state or machine-specific rollback hashes.
+
 ## Matched A/B procedure
 
 Use the same brightness, actual refresh rate, power profile, radios, keyboard

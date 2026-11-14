@@ -2,6 +2,11 @@
 
 Super is the Windows/logo key. Super+F1 opens the installed complete cheat sheet.
 
+The generic baseline below retains focus-only Alt+Tab. The reference laptop's
+newer [optional native Windows-style Alt+Tab](ALT_TAB.md) profile uses compact
+previews, MRU ordering and release-Alt selection. It is exported separately
+because its reviewed software versions differ from the automatic installer's.
+
 | Shortcut | Behavior |
 | --- | --- |
 | Super+Enter / Ctrl+Alt+T | Kitty; Shift+Super+Enter is centered floating Kitty |

@@ -65,6 +65,7 @@ validated hardware setup on every computer.
 | Guide | Purpose |
 | --- | --- |
 | [Features and shortcuts](docs/FEATURES.md) | Everyday behavior |
+| [Optional Windows-style Alt+Tab](docs/ALT_TAB.md) | Native Noctalia 5.4.1 compact/MRU profile and safe rollback |
 | [Installation](docs/INSTALL.md) | Staged migration and recovery |
 | [Migration history](docs/HISTORY.md) | Decisions and evidence, not fabricated chat history |
 | [Validation](docs/VALIDATION.md) | Verified results and outstanding hardware checks |

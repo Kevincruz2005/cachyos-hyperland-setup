@@ -1,0 +1,6 @@
+# Merge into the existing section if present; do not append duplicate TOML tables.
+# Also inspect Noctalia's state-dir settings.toml, which can override config files.
+# Reference: native Noctalia 5.4.1, not Quickshell/v4.
+[shell.window_switcher]
+style = "compact"
+mru = true
