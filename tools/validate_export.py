@@ -19,23 +19,32 @@ def main():
         return 0
     with tempfile.TemporaryDirectory(prefix="desktop-export-validation-") as name:
         base = Path(name)
-        for variant in ("generic", "nvidia"):
+        for variant in ("legacy", "current-generic", "current-nvidia"):
             home, backup = base / variant / "isolated-home", base / variant / "backup"
             home.mkdir(parents=True)
             backup.mkdir()
-            host = {"display": {"output": "eDP-7", "mode": "2560x1600@60.00", "scale": "auto"},
-                    "gpus": [{"vendor": "0x10de"}] if variant == "nvidia" else [],
-                    "packages": {"systemsettings": "installed", "plasma-nm": "installed"} if variant == "nvidia" else {}}
+            current, nvidia = variant.startswith('current'), variant.endswith('nvidia')
+            host = {"display": {"output": "eDP-7", "mode": "2560x1600@60.00", "scale": 2.0 if nvidia else "auto"},
+                    "gpus": [{"vendor": "0x10de"}] if nvidia else [],
+                    "packages": {"hyprland": "0.57.1-1", "noctalia": "5.4.1-1", "uwsm": "0.27.1-1"} if current else {}}
+            if nvidia:
+                host['packages'].update(systemsettings='installed', **{'plasma-nm': 'installed'})
             snapshot_and_write(home, render(home, host, base / "wallpaper.png", sddm=True), backup)
             env = {**os.environ, "HOME": str(home), "XDG_CONFIG_HOME": str(home / ".config"),
                    "XDG_STATE_HOME": str(home / ".local/state"), "XDG_DATA_HOME": str(home / ".local/share"),
                    "XDG_CACHE_HOME": str(base / variant / "cache")}
+            runtime = base / variant / 'runtime'
+            runtime.mkdir(mode=0o700)
+            env['XDG_RUNTIME_DIR'] = str(runtime)
+            env.pop('HYPRLAND_INSTANCE_SIGNATURE', None)
+            env.pop('WAYLAND_DISPLAY', None)
+            env['DBUS_SESSION_BUS_ADDRESS'] = 'unix:path=' + str(runtime / 'no-session-bus')
             commands = [
                 ["Hyprland", "--verify-config", "--config", str(home / ".config/hypr/hyprland.lua")],
                 ["noctalia", "config", "validate", str(home / ".config/noctalia")],
                 ["noctalia", "config", "validate", str(home / ".local/state/noctalia/settings.toml")],
             ]
-            if variant == "generic":
+            if not nvidia:
                 commands.append(["noctalia", "config", "validate", str(ROOT / "profiles/lockscreen-reference.toml")])
             else:
                 commands.append(["noctalia", "plugins", "lint", str(home / ".local/share/noctalia/plugins/gpu-status")])

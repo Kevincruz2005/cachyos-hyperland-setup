@@ -2,10 +2,10 @@
 
 Super is the Windows/logo key. Super+F1 opens the installed complete cheat sheet.
 
-The generic baseline below retains focus-only Alt+Tab. The reference laptop's
-newer [optional native Windows-style Alt+Tab](ALT_TAB.md) profile uses compact
-previews, MRU ordering and release-Alt selection. It is exported separately
-because its reviewed software versions differ from the automatic installer's.
+Legacy combinations below retain focus-only Alt+Tab. The current reviewed
+stack selects the [native Windows-style Alt+Tab](ALT_TAB.md) profile: compact
+previews, MRU ordering and release-Alt selection. Super+T now launches Mousepad
+without a background server; floating file dialogs are centered and size-bounded.
 
 | Shortcut | Behavior |
 | --- | --- |
@@ -14,11 +14,12 @@ because its reviewed software versions differ from the automatic installer's.
 | Super+E | Dolphin, following the tiling layout |
 | Super+B / Super+W | Helium / Brave |
 | Calculator key / Super+C | Calculator |
+| Super+T | Mousepad, standalone window |
 | Alt+F4 / Super+Q | Close focused app |
 | Super+F / Super+Shift+F | Maximize with app tabs / true fullscreen |
 | Super+D | Show desktop / return without modifying original layout |
 | Super+Shift+= / Super+- | Cursor-following screen zoom, 1×–10× |
-| Alt+Tab / Alt+Shift+Tab | Focus next/previous; no automatic maximize |
+| Alt+Tab / Alt+Shift+Tab | Current: visual selection/backward; legacy: next/previous; no auto-maximize |
 | Super+Tab | Visual Noctalia switcher |
 | Super+1…9 | Workspaces; Shift sends silently, Alt sends and follows |
 | Super+arrows / Super+Alt+arrows | Focus / resize |
@@ -109,6 +110,8 @@ existing power-profiles-daemon battery-aware policy and Noctalia AC/battery
 hooks can change it again when the power source changes. The shortcut does not
 modify that policy, GPU routing or display refresh rate.
 
-SDDM login and Noctalia lock are separate. Password entry stays normal. Only
-SDDM wallpaper follows later wallpaper changes; greeter colors are a static
-snapshot. No Enter-to-reveal password mode or animated greeter background.
+Login and Noctalia lock are separate. Password entry stays normal. With the
+explicit official-greeter option, native authenticated appearance sync follows
+wallpaper/palette changes. With the legacy optional SDDM path, the static
+wallpaper hook is separate. No Enter-to-reveal password mode or animated
+greeter background is added.

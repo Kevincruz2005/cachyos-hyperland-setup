@@ -13,7 +13,8 @@ import shutil
 import subprocess
 import tempfile
 import tomllib
-from toml_state import merge_state
+from toml_state import merge_state, dump, merge
+from login import editor_argv, greetd_config, pam_keyring, GREETER_VERSIONS, GREETD_VERSIONS
 from preferences import apply_preferences, restore_preferences
 
 from detect import audit, packages, run, version
@@ -114,7 +115,7 @@ def wallpaper_file(args):
     return path
 
 
-def render(home, host, wallpaper, sddm=False):
+def render(home, host, wallpaper, sddm=False, login=False, keyring=False):
     home, wallpaper = Path(home), Path(wallpaper)
     known = {"config.toml", "sddm-wallpaper-sync.toml"}
     fragments = home / ".config/noctalia"
@@ -130,15 +131,50 @@ def render(home, host, wallpaper, sddm=False):
             if source.is_file():
                 relative = Path(".config") / family / source.relative_to(ROOT / "config" / family)
                 result[str(relative)] = source.read_bytes()
+    current = version(host.get("packages", {}).get("noctalia", "")) == "5.4.1"
+    if current:
+        key = ".config/hypr/config/binds.lua"
+        original = b'hl.bind("ALT + Tab",         hl.dsp.window.cycle_next({ next = true }))'
+        replacement = b'hl.bind("ALT + Tab",         hl.dsp.exec_cmd(noctCall .. "window-switcher hold"))'
+        if result[key].count(original) != 1:
+            raise RuntimeError("Window-switcher binding anchor changed; review required.")
+        result[key] = result[key].replace(original, replacement, 1)
+        sheet = ".config/hypr/SHORTCUTS.txt"
+        result[sheet] = result[sheet].replace(
+            b"Switch to next window (no automatic maximize)",
+            b"Hold Alt, tap Tab to choose; release Alt to select (recent first)").replace(
+            b"Switch to previous window (no automatic maximize)",
+            b"Backward inside switcher; native previous window when closed")
+        config_key = ".config/noctalia/config.toml"
+        result[config_key] = dump(merge(tomllib.loads(result[config_key].decode()), {
+            "shell": {"window_switcher": {"style": "compact", "mru": True},
+                      "launcher": {"layout": "simple"}}}))
+    if login:
+        config_key = ".config/noctalia/config.toml"
+        result[config_key] = dump(merge(tomllib.loads(result[config_key].decode()),
+                                      {"shell": {"greeter_sync": {"auto_sync": True}}}))
+    if keyring:
+        # This opt-in uses GNOME Keyring; do not also initialize KWallet in Hyprland.
+        result[".config/hypr/config/autostart.lua"] = (
+            '-- UWSM owns the session; GNOME Keyring is unlocked by the reviewed PAM step.\n'
+            'hl.on("hyprland.start", function ()\n    hl.exec_cmd("uwsm app -- noctalia")\nend)\n').encode()
+        for folder in (".vscode", ".cursor", ".config/Cursor"):
+            argv = folder + "/argv.json"
+            target = checked_target(home, argv)
+            # Only configure installed/previously initialized editors. Never copy account IDs.
+            if target.exists():
+                if target.is_symlink():
+                    raise RuntimeError("Symlinked editor runtime file needs manual review.")
+                result[argv] = editor_argv(target.read_text())
     # The KDE editor is optional: add no broken action or new package on hosts
     # without both the System Settings launcher and its NetworkManager KCM.
     if {"systemsettings", "plasma-nm"} <= host.get("packages", {}).keys():
         key = ".config/noctalia/config.toml"
-        anchor = b'[widget.network]\ncolor = "secondary"\n\n'
-        if result[key].count(anchor) != 1 or b"[widget.network.actions]" in result[key]:
+        config = tomllib.loads(result[key].decode())
+        if 'actions' in config['widget']['network']:
             raise RuntimeError("Noctalia network widget needs manual action review.")
-        action = b'    [widget.network.actions]\n    right = "exec systemsettings kcm_networkmanagement"\n\n'
-        result[key] = result[key].replace(anchor, anchor + action, 1)
+        config['widget']['network']['actions'] = {'right': 'exec systemsettings kcm_networkmanagement'}
+        result[key] = dump(config)
     result[".config/hypr/config/host.lua"] = lua_host(host["display"])
     for script in ("hypr-screenshot", "hypr-dictation", "sddm-wallpaper-sync", "power-mode-cycle"):
         result[".local/bin/" + script] = (ROOT / "tools" / script).read_bytes()
@@ -177,7 +213,7 @@ def render(home, host, wallpaper, sddm=False):
         result[autostart] = ini_merge(defaults, additions)
     # Do not transplant output-specific lock widget positions or private service settings.
     relative = ".local/state/noctalia/settings.toml"
-    additions = tomllib.loads((ROOT / "config/noctalia/config.toml").read_text())
+    additions = tomllib.loads(result[".config/noctalia/config.toml"].decode())
     if any(gpu.get("vendor") == "0x10de" for gpu in host.get("gpus", [])):
         # A local, read-only plugin. Do not displace a target's customized tiles.
         user_config = checked_target(home, ".config/noctalia/config.toml")
@@ -205,9 +241,37 @@ def render(home, host, wallpaper, sddm=False):
         for filename in ("plugin.toml", "check.luau"):
             result[".local/share/noctalia/plugins/gpu-status/" + filename] = (
                 ROOT / "plugins/gpu-status" / filename).read_bytes()
-    additions["config_version"] = 14
+    expected_schema = 16 if current else 14
+    settings_path = checked_target(home, relative)
+    existing_settings = tomllib.loads(settings_path.read_text()) if settings_path.exists() else {}
+    schema = existing_settings.get('config_version', 0)
+    if type(schema) is not int or schema > expected_schema:
+        raise RuntimeError('Noctalia state schema is newer/unknown; do not downgrade private state.')
+    additions["config_version"] = expected_schema
     additions["wallpaper"]["default"]["path"] = str(wallpaper)
     additions["lockscreen_widgets"] = {"enabled": False}
+    if current:
+        # Adapt the reference only when target logical geometry is known, not guessed.
+        display = host["display"]
+        dimensions = re.fullmatch(r"(\d+)x(\d+)@[\d.]+", display["mode"])
+        scale = display["scale"]
+        if dimensions and isinstance(scale, (int, float)) and display["output"]:
+            reference = tomllib.loads((ROOT / "profiles/lockscreen-reference.toml").read_text())
+            width, height = int(dimensions[1]) / scale, int(dimensions[2]) / scale
+            widgets = reference["lockscreen_widgets"]
+            widgets["widget_order"] = [s.replace("eDP-1", display["output"]) for s in widgets["widget_order"]]
+            adapted = {}
+            for name, widget in widgets["widget"].items():
+                widget["output"] = display["output"]
+                for field in ("cx", "box_width"):
+                    widget[field] *= width / 1536
+                for field in ("cy", "box_height"):
+                    widget[field] *= height / 864
+                widget["placement_width"], widget["placement_height"] = width, height
+                adapted[name.replace("eDP-1", display["output"])] = widget
+            widgets["widget"] = adapted
+            additions["lockscreen_widgets"] = widgets
+            additions["lockscreen"] = merge(additions["lockscreen"], reference["lockscreen"])
     result[relative] = merge_state(checked_target(home, relative), additions)
     portal = Path("/usr/share/xdg-desktop-portal/hyprland-portals.conf")
     if portal.is_file():
@@ -240,6 +304,10 @@ def blockers(host, candidates):
         raw = host["packages"].get(package) or candidates.get(package, "")
         if not raw or version(raw) not in accepted:
             issues.append(f"Unsupported or unknown {package} version. Tested: {', '.join(accepted)}; no downgrade/pinning performed.")
+    stack = {name: version(host["packages"].get(name) or candidates.get(name, ""))
+             for name in MANIFEST["tested_versions"]}
+    if stack not in MANIFEST["supported_stacks"]:
+        issues.append("This combination of desktop versions has not been reviewed; no mixed-version deployment.")
     if any(host["services"].get(unit) == "active" for unit in ("tlp", "auto-cpufreq")):
         issues.append("An alternate power daemon is active; preserve it and resolve compatibility with an agent.")
     if host["services"].get("power-profiles-daemon") != "active":
@@ -249,14 +317,19 @@ def blockers(host, candidates):
     return issues
 
 
-def package_plan(host):
+def package_plan(host, login=False, keyring=False):
     installed = packages()
     roots = list(MANIFEST["core"] + MANIFEST["dictation"])
+    if login:
+        roots += MANIFEST["login"]
+    if keyring:
+        roots += MANIFEST["keyring"]
     if any(gpu["vendor"] == "0x10de" for gpu in host["gpus"]):
         roots += MANIFEST["nvidia_existing_driver_only"]
     missing = [name for name in roots if name not in installed]
     candidates = {}
-    for name in MANIFEST["tested_versions"]:
+    candidate_names = list(MANIFEST["tested_versions"]) + (MANIFEST["login"] if login else [])
+    for name in candidate_names:
         code, output = run(["pacman", "-Si", name])
         match = re.search(r"^Version\s*:\s*(\S+)", output, re.M)
         if not code and match:
@@ -359,7 +432,7 @@ def rollback(home, backup, check_only=False):
 
 def handoff(report_dir, stage, error, backup=None):
     message = ("This setup was developed on a Dell G15 5530 (Intel i5-13450HX + NVIDIA RTX 3050), "
-               "CachyOS, Hyprland 0.56.2 / Noctalia 5.2.0 or 5.2.1 / UWSM 0.27.0.\n"
+               "CachyOS; current reference Hyprland 0.57.1 / Noctalia 5.4.1 / UWSM 0.27.1.\n"
                f"Stopped at {stage}: {error}\nNo unsafe fallback was applied.\n"
                "Give a coding agent AGENTS.md, docs/AGENT_HANDOFF.md and this private report AFTER reviewing it for privacy.\n")
     report_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -390,6 +463,10 @@ def main():
     parser.add_argument("--sddm", action="store_true")
     parser.add_argument("--confirm-greeter-preview", action="store_true")
     parser.add_argument("--select-sddm", action="store_true")
+    parser.add_argument("--login", choices=("keep", "noctalia"), default="keep",
+                        help="explicit next-boot display-manager opt-in; default preserves current login")
+    parser.add_argument("--gnome-keyring", action="store_true",
+                        help="separately approved optional greetd/passwd hooks and existing editor backend")
     parser.add_argument("--backup", type=Path)
     args = parser.parse_args()
     if os.getuid() == 0:
@@ -433,21 +510,54 @@ def main():
                                    ("XDG_DATA_HOME", home / ".local/share")):
             if os.environ.get(variable) and Path(os.environ[variable]).resolve() != expected.resolve():
                 raise RuntimeError("Custom " + variable + " needs agent path adaptation; no home-default config will be written.")
-        plan = package_plan(host)
+        if args.login == "noctalia" and args.sddm:
+            raise RuntimeError("Choose one login integration, not SDDM and greetd together.")
+        if args.gnome_keyring and args.login != "noctalia":
+            raise RuntimeError("--gnome-keyring requires an explicitly reviewed --login noctalia stage.")
+        if args.login == "noctalia" and version(host["packages"].get("noctalia", "")) not in ("", "5.4.1"):
+            raise RuntimeError("The official-login adapter is reviewed with native Noctalia 5.4.1 only.")
+        plan = (package_plan(host, True, args.gnome_keyring) if args.login == "noctalia" else package_plan(host))
         problems = blockers(host, plan["candidates"])
+        if args.login == "noctalia":
+            selected_noctalia = host['packages'].get('noctalia') or plan['candidates'].get('noctalia', '')
+            if version(selected_noctalia) != '5.4.1':
+                problems.append('Official-login adapter requires the reviewed Noctalia 5.4.1 desktop stack.')
+            for name, accepted in (('noctalia-greeter', GREETER_VERSIONS), ('greetd', GREETD_VERSIONS)):
+                raw = host['packages'].get(name) or plan['candidates'].get(name, '')
+                if version(raw) not in accepted:
+                    problems.append('Unsupported or unknown ' + name + ' version for optional login stage.')
         plan["blockers"] = problems
         private_json(report_dir / "plan.json", plan)
         print(json.dumps(plan, indent=2))
         if problems:
             raise RuntimeError("; ".join(problems))
+        if args.login == "noctalia":
+            # Catch readable custom layouts during plan, before package/user writes.
+            # Missing package defaults are reviewed again in the protected stage.
+            config = Path('/etc/greetd/config.toml')
+            if config.exists():
+                if config.is_symlink():
+                    raise RuntimeError('Symlinked greetd config requires manual review.')
+                greetd_config(config.read_text(), pwd.getpwuid(os.getuid()).pw_name)
+            if args.gnome_keyring:
+                for kind in ('greetd', 'passwd'):
+                    path = Path('/etc/pam.d') / kind
+                    if path.exists():
+                        if path.is_symlink():
+                            raise RuntimeError('Symlinked PAM file requires manual review.')
+                        pam_keyring(path.read_text(), kind)
         wallpaper = wallpaper_file(args)
         if args.sddm:
             stage_greeter(report_dir, wallpaper)
         if args.action == "plan":
-            payload = render(home, host, wallpaper, args.sddm)
+            payload = render(home, host, wallpaper, args.sddm, args.login == "noctalia", args.gnome_keyring)
             changes = [key for key, value in payload.items() if digest(checked_target(home, key)) != hashlib.sha256(value).hexdigest()]
             private_json(report_dir / "changes.json", changes)
             print("Files to change:\n" + "\n".join(changes))
+            if args.login == "noctalia":
+                print("Optional protected stage: /etc/greetd/config.toml; next-boot display-manager selection; greeter state directory if missing.")
+                if args.gnome_keyring:
+                    print("Separately approved PAM changes: optional GNOME Keyring hooks in /etc/pam.d/greetd and /etc/pam.d/passwd. No keyring password/reset.")
             print("Plan only. No target config/services changed. Report: " + str(report_dir))
             return 0
         if run(["systemctl", "--user", "is-active", "hypr-dictation.service"])[1] == "active":
@@ -457,6 +567,10 @@ def main():
         if args.sddm and not args.confirm_greeter_preview:
             raise RuntimeError("Preview the staged greeter, then pass --confirm-greeter-preview; no graphical login change made.")
         prompt("Apply reviewed packages/configuration? Existing configuration will be backed up.")
+        if args.login == "noctalia":
+            prompt("Select official Noctalia Greeter/greetd for NEXT BOOT, retaining SDDM/KDE and without stopping this session?")
+        if args.gnome_keyring:
+            prompt("Add optional GNOME Keyring PAM hooks and select encrypted GNOME storage in existing VS Code/Cursor runtime files? Existing wallet passwords must already match or be aligned manually.")
         backup = state / "backups" / stamp()
         backup.mkdir(parents=True, mode=0o700)
         private_json(backup / "baseline.json", host)
@@ -484,7 +598,7 @@ def main():
             if blockers(host, {}):
                 raise RuntimeError("Post-package compatibility differs; stop before deploying config.")
         stage = "configuration generation"
-        payload = render(home, host, wallpaper, args.sddm)
+        payload = render(home, host, wallpaper, args.sddm, args.login == "noctalia", args.gnome_keyring)
         if args.sddm:
             stage = "SDDM integration"
             cmd = ["sudo", "python3", str(ROOT / "lib/privileged.py"), "sddm", "--uid", str(os.getuid()), "--backup", str(backup), "--wallpaper", str(wallpaper)]
@@ -501,11 +615,20 @@ def main():
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)
             module.download(home / ".local/share/hypr-dictation/models" / MODEL_NAME)
+        if args.login == "noctalia":
+            stage = "official Noctalia next-boot login"
+            cmd = ["sudo", "python3", str(ROOT / "lib/privileged.py"), "login", "--uid", str(os.getuid()),
+                   "--backup", str(backup), "--confirm-login-change"]
+            if args.gnome_keyring:
+                cmd += ["--gnome-keyring"]
+            subprocess.run(cmd, check=True)
         model = home / ".local/share/hypr-dictation/models" / MODEL_NAME
         ready = digest(model) == MODEL_SHA
         private_json(report_dir / "result.json", {"backup": str(backup), "config_deployed": receipt["complete"], "dictation_model_ready": ready, "hardware_validated": False})
         print("Configuration deployed; no session reload/reboot performed. Backup: " + str(backup))
         print("Choose Hyprland (UWSM) manually; verify the retained desktop fallback first.")
+        if args.login == "noctalia":
+            print("Official login selected for next boot only. Once inside Hyprland, run noctalia msg greeter-sync and approve appearance sync. No passwordless rule is installed.")
         if not ready:
             handoff(report_dir, "dictation model", "Speech model not installed. Explicitly run python tools/download_model.py; full feature readiness is incomplete.", backup)
             return 2

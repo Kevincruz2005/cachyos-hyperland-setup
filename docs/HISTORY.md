@@ -1,5 +1,22 @@
 # Reconstructed migration history
 
+## 2026-11-15: current one-script adapter
+
+The installer export now recognizes the exact Hyprland 0.57.1 / native Noctalia
+5.4.1 / UWSM 0.27.1 combination alongside legacy combinations. It selects the
+current compact/MRU switcher and simple launcher, includes Mousepad and explicit
+camera codecs, and exports the scoped file-dialog placement correction. The
+author confirmed Mousepad's filename field became accessible after that local
+dialog correction. The camera codec repair restored the missing encoder;
+fresh application preview remains owner-assisted, not a new automated pass.
+
+Official Noctalia Greeter and optional GNOME Keyring integration became a
+separately approved next-boot stage in the same entry script. A fake-filesystem,
+fake-service fixture exercises selection/cancellation/failure recovery, and
+native offline validators parse generated desktop profiles. This repository
+update was not applied to the author's working laptop. No full disposable
+CachyOS VM package/login end-to-end result is claimed. See CURRENT_SETUP.md.
+
 This is a sanitized reconstruction from current files and available migration
 reports, not an assertion that every chat survived. Missing tests are explicitly
 unknown. Git commits document the export implementation with real commit dates;

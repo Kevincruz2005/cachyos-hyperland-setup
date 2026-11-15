@@ -3,7 +3,7 @@
 TERMINAL     = "kitty"
 FILE_MANAGER = "dolphin"
 BROWSER      = "brave"
-EDITOR       = "gnome-text-editor --new-window"
+EDITOR       = "mousepad --disable-server"
 CALCULATOR   = "gnome-calculator"
 
 -- Monitors

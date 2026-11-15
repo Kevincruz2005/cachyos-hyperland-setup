@@ -19,7 +19,10 @@ Hyprland, Noctalia and NVIDIA documentation before adapting versioned APIs.
 - Do not run apply on the author's working laptop just to test the repository.
 - Keep original upstream licenses and source attribution. Do not upload the referenced wallpaper.
 - Dictation must have no autostart/idle worker and bounded whole-cgroup termination.
-- Do not reset keyrings or change login/PAM handlers to work around authentication issues.
+- Never reset keyrings. Login/PAM changes are limited to the explicit optional
+  --login noctalia / --gnome-keyring flow, with separate target-owner prompts,
+  known include layouts, exact protected-file preview and receipt-backed rollback.
+  Never run that stage on the author's laptop merely to test this repository.
 - Never reboot, suspend, lock or log out a user automatically during validation.
 - Mark untested hardware behavior honestly; never fabricate A/B power measurements.
 - A stopped module is not complete. Produce a stage-specific handoff, backup path and next safe diagnostic.

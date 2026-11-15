@@ -9,10 +9,11 @@ The installed greetd PAM configuration lacked GNOME Keyring integration; the
 existing keyring already accepted the user's current login password. No keyring
 reset, password change or weaker encryption was needed.
 
-This is a record of an explicitly authorized, host-reviewed fix, **not** an
-automatic installer module or permission to change another machine's login.
-The portable installer still has its existing version gates and SDDM path;
-it does not install/select greetd or apply the PAM changes below.
+This records an explicitly authorized, host-reviewed fix, not permission to
+change another machine's login. Since the November 15 installer update,
+`--login noctalia --gnome-keyring` offers a separately confirmed implementation
+of these narrow hooks. The default installer does not change PAM or select
+greetd. See [OFFICIAL_LOGIN.md](OFFICIAL_LOGIN.md) for approval/recovery details.
 
 ## Review before adapting
 

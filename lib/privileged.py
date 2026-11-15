@@ -3,6 +3,7 @@
 """Narrow, explicitly requested privileged stages. Never restart a session."""
 import argparse
 import configparser
+import difflib
 import fnmatch
 import hashlib
 import json
@@ -18,6 +19,8 @@ import tempfile
 
 from detect import packages, run
 from installer import ROOT, BREEZE_SHA, digest, private_json, stamp
+from detect import version
+from login import greetd_config, pam_keyring, GREETER_VERSIONS, GREETD_VERSIONS
 
 SNAPSHOT_HOOKS = {"05-snap-pac-pre.hook", "10-snap-pac-removal.hook", "zz-snap-pac-post.hook"}
 DM_UNITS = ("sddm.service", "plasmalogin.service", "gdm.service", "lightdm.service", "greetd.service", "lxdm.service")
@@ -64,6 +67,13 @@ def review_hooks(paths, archives, transaction, allow_snapshot=False):
             raise RuntimeError("Matching boot/snapshot-writing hook rejected: " + path.name)
         # Only the distro's ordinary cache-update commands, no shell, custom scripts or daemon restarts.
         executable = shlex.split(command)[0]
+        systemd_cache_commands = {
+            "/usr/share/libalpm/scripts/systemd-hook update",
+            "/usr/share/libalpm/scripts/systemd-hook daemon-reload-system",
+            "/usr/share/libalpm/scripts/systemd-hook daemon-reload-user",
+            "/usr/share/libalpm/scripts/systemd-hook sysusers",
+            "/usr/share/libalpm/scripts/systemd-hook tmpfiles",
+        }
         safe = {
             "/usr/bin/update-desktop-database", "/usr/bin/update-mime-database", "/usr/bin/gtk-update-icon-cache",
             "/usr/bin/fc-cache", "/usr/bin/glib-compile-schemas", "/usr/bin/gio-querymodules",
@@ -73,7 +83,7 @@ def review_hooks(paths, archives, transaction, allow_snapshot=False):
             "/usr/share/libalpm/scripts/update-mime-database", "/usr/share/libalpm/scripts/gtk4-querymodules",
             "/usr/share/libalpm/scripts/texinfo-install", "/usr/share/libalpm/scripts/man-db-install",
         }
-        if executable not in safe:
+        if executable not in safe and command not in systemd_cache_commands:
             raise RuntimeError("Matching hook needs manual source review: " + path.name)
     return overrides
 
@@ -302,11 +312,106 @@ def sddm_stage(args, user, home, backup):
     print("Next-boot rollback: ./setup rollback --backup " + shlex.quote(str(backup)))
 
 
+def trusted_session_wrapper(path):
+    try:
+        return (path.is_file() and not path.is_symlink()
+                and all(p.stat().st_uid == 0 and not p.stat().st_mode & 0o022
+                        for p in (path, *path.parents)))
+    except OSError:
+        return False
+
+
+def login_stage(args, user, home, backup):
+    """Opt-in next-boot official greeter. Never stop/restart a display manager."""
+    if not args.confirm_login_change:
+        raise RuntimeError("Explicit next-boot login approval is required.")
+    installed = packages()
+    if version(installed.get("noctalia", "")) != '5.4.1' or version(installed.get("noctalia-greeter", "")) not in GREETER_VERSIONS or version(installed.get("greetd", "")) not in GREETD_VERSIONS:
+        raise RuntimeError("Unreviewed greeter/greetd version; leave login selection unchanged.")
+    if not all(Path(p).is_file() for p in (
+            "/usr/share/wayland-sessions/hyprland-uwsm.desktop",
+            "/usr/share/wayland-sessions/plasma.desktop")) or not shutil.which("sddm"):
+        raise RuntimeError("Both UWSM/Plasma entries and retained SDDM are required.")
+    wrapper = Path('/usr/bin/noctalia-greeter-session')
+    if not trusted_session_wrapper(wrapper):
+        raise RuntimeError("Official root-owned session wrapper not ready.")
+    greeter = pwd.getpwnam('greeter')
+    link = Path('/etc/systemd/system/display-manager.service')
+    previous = link.resolve().name if link.exists() else None
+    if previous not in DM_UNITS:
+        raise RuntimeError("Unknown/missing current display manager; manual review required.")
+    if any(run(['systemctl', 'is-enabled', unit])[1] == 'enabled' for unit in DM_UNITS if unit != previous):
+        raise RuntimeError("More than one display manager is enabled; resolve manually.")
+    paths = {Path('/etc/greetd/config.toml'): None}
+    if args.gnome_keyring:
+        if 'gnome-keyring' not in installed or not Path('/usr/lib/security/pam_gnome_keyring.so').is_file():
+            raise RuntimeError("GNOME Keyring and its PAM module must be installed first.")
+        for name in ('system-local-login', 'system-login', 'system-auth'):
+            if 'pam_gnome_keyring.so' in Path('/etc/pam.d', name).read_text():
+                raise RuntimeError("An included PAM stack already handles the keyring; manual merge required.")
+        paths[Path('/etc/pam.d/greetd')] = None
+        paths[Path('/etc/pam.d/passwd')] = None
+    for path in paths:
+        if path.is_symlink() or not path.is_file() or any(p.is_symlink() for p in path.parents):
+            raise RuntimeError("Unreviewed protected configuration path: " + str(path))
+    paths[Path('/etc/greetd/config.toml')] = greetd_config(Path('/etc/greetd/config.toml').read_text(), user.pw_name)
+    if args.gnome_keyring:
+        paths[Path('/etc/pam.d/greetd')] = pam_keyring(Path('/etc/pam.d/greetd').read_text(), 'greetd')
+        paths[Path('/etc/pam.d/passwd')] = pam_keyring(Path('/etc/pam.d/passwd').read_text(), 'passwd')
+    state = Path('/var/lib/noctalia-greeter')
+    if state.is_symlink() or any(p.is_symlink() for p in state.parents):
+        raise RuntimeError("Symlinked greeter state requires review.")
+    if state.exists() and (not state.is_dir() or state.stat().st_uid != greeter.pw_uid):
+        raise RuntimeError("Existing greeter state ownership requires review.")
+    receipt = system_receipt(backup)
+    if receipt['files'] or receipt['directories']:
+        raise RuntimeError("Do not reuse a system integration checkpoint.")
+    print('Protected login plan (changes only; existing authentication checks are retained):')
+    for path, data in paths.items():
+        print(str(path))
+        for line in difflib.unified_diff(path.read_text().splitlines(), data.decode().splitlines(), n=0):
+            if line.startswith(('+', '-')) and not line.startswith(('+++', '---')):
+                print(line)
+    print('Next-boot display manager: ' + previous + ' -> greetd.service. Current session will not be stopped.')
+    if not sys.stdin.isatty() or input('Type ENABLE NOCTALIA LOGIN to apply this protected plan: ') != 'ENABLE NOCTALIA LOGIN':
+        raise RuntimeError('Protected login plan canceled; no login files or service selection changed.')
+    receipt.update(login_profile=True, previous_dm=previous, selected_dm=None)
+    save_receipt(backup, receipt, user.pw_uid)
+    # All supported transforms and filesystem targets were checked before writing.
+    if not state.exists():
+        state.mkdir(mode=0o750)
+        os.chown(state, greeter.pw_uid, greeter.pw_gid)
+        # State is deliberately retained on rollback: it may acquire new appearance data.
+        receipt['retained_greeter_state'] = str(state)
+        save_receipt(backup, receipt, user.pw_uid)
+    for path, data in paths.items():
+        system_write(path, data, backup, receipt, user.pw_uid)
+    # Record the intended selection before the first service enable/disable write,
+    # so an interrupted stage retains an exact next-boot recovery path.
+    receipt['selected_dm'] = 'greetd.service'
+    save_receipt(backup, receipt, user.pw_uid)
+    try:
+        if previous != 'greetd.service':
+            subprocess.run(['systemctl', 'disable', previous], check=True)
+        subprocess.run(['systemctl', 'enable', '--force', 'greetd.service'], check=True)
+        if link.resolve().name != 'greetd.service' or any(run(['systemctl', 'is-enabled', unit])[1] == 'enabled' for unit in DM_UNITS if unit != 'greetd.service'):
+            raise RuntimeError("Display-manager selection failed validation.")
+    except (RuntimeError, subprocess.SubprocessError):
+        # Restore the original next-boot selection immediately, without --now.
+        subprocess.run(['systemctl', 'disable', 'greetd.service'], check=True)
+        subprocess.run(['systemctl', 'enable', '--force', previous], check=True)
+        raise
+    print('Official Noctalia login selected for NEXT BOOT. Current session was not stopped/restarted.')
+    print('Rollback: ./setup rollback --backup ' + shlex.quote(str(backup)))
+
+
 def rollback_system(user, home, backup):
     receipt = system_receipt(backup)
     allowed_paths = {"/etc/sddm.conf.d/90-cachyos-noctalia-static.conf", "/root/.local/share/color-schemes/noctalia.colors",
                      "/var/lib/sddm-wallpaper-sync/" + user.pw_name + "/current"}
     allowed_dirs = {"/usr/share/sddm/themes/cachyos-noctalia-static", "/var/lib/sddm-wallpaper-sync/" + user.pw_name}
+    if receipt.get('login_profile'):
+        allowed_paths.update(('/etc/greetd/config.toml', '/etc/pam.d/greetd', '/etc/pam.d/passwd'))
     # Validate everything before the first mutation; do not trust arbitrary receipt paths.
     for record in receipt["files"]:
         path = Path(record["path"])
@@ -327,6 +432,12 @@ def rollback_system(user, home, backup):
             raise RuntimeError("Display manager changed since installation; leave it untouched.")
         if previous is not None and previous not in DM_UNITS:
             raise RuntimeError("Invalid rollback display manager.")
+    selected = receipt.get('selected_dm')
+    if selected:
+        previous = receipt['previous_dm']
+        link = Path('/etc/systemd/system/display-manager.service')
+        if selected != 'greetd.service' or previous not in DM_UNITS or link.resolve().name not in (selected, previous):
+            raise RuntimeError('Display-manager selection changed; manual recovery required.')
     for record in reversed(receipt["files"]):
         path = Path(record["path"])
         if digest(path) == record["before"]:
@@ -347,18 +458,23 @@ def rollback_system(user, home, backup):
         subprocess.run(["systemctl", "disable", "sddm.service"], check=True)
         if receipt["previous_dm"]:
             subprocess.run(["systemctl", "enable", "--force", receipt["previous_dm"]], check=True)
+    if selected and receipt['previous_dm'] != selected:
+        subprocess.run(['systemctl', 'disable', selected], check=True)
+        subprocess.run(['systemctl', 'enable', '--force', receipt['previous_dm']], check=True)
     print("Recorded system integration restored for the next boot. Disabled files are recoverable beside their originals; no session restart.")
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("action", choices=("packages", "sddm", "rollback"))
+    parser.add_argument("action", choices=("packages", "sddm", "login", "rollback"))
     parser.add_argument("--uid", type=int, required=True)
     parser.add_argument("--backup", type=Path, required=True)
     parser.add_argument("--wallpaper")
     parser.add_argument("--select-sddm", action="store_true")
     parser.add_argument("--allow-snapshot-hook-override", action="store_true")
     parser.add_argument("--allow-settings-replacement", action="store_true")
+    parser.add_argument("--confirm-login-change", action="store_true")
+    parser.add_argument("--gnome-keyring", action="store_true")
     args = parser.parse_args()
     try:
         user, home, backup = validate_context(args.uid, args.backup)
@@ -366,6 +482,8 @@ def main():
             package_stage(args, user, home, backup)
         elif args.action == "sddm":
             sddm_stage(args, user, home, backup)
+        elif args.action == "login":
+            login_stage(args, user, home, backup)
         else:
             rollback_system(user, home, backup)
     except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as error:

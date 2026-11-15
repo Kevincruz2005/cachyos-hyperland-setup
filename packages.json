@@ -1,7 +1,14 @@
 {
-  "core": ["cachyos-hypr-noctalia", "sddm", "dolphin", "firefox", "brave-bin", "helium-browser-bin", "kamoso", "gnome-calculator", "gnome-text-editor", "ttf-jetbrains-mono-nerd", "adwaita-fonts", "adw-gtk-theme", "noto-fonts", "breeze-icons", "breeze", "power-profiles-daemon", "xdg-desktop-portal-gtk", "python", "python-gobject", "python-cairo", "gtk4-layer-shell", "libnotify", "tesseract", "tesseract-data-eng"],
+  "core": ["cachyos-hypr-noctalia", "sddm", "dolphin", "firefox", "brave-bin", "helium-browser-bin", "kamoso", "gst-plugins-base", "mousepad", "gnome-calculator", "ttf-jetbrains-mono-nerd", "adwaita-fonts", "adw-gtk-theme", "noto-fonts", "breeze-icons", "breeze", "power-profiles-daemon", "xdg-desktop-portal-gtk", "python", "python-gobject", "python-cairo", "gtk4-layer-shell", "libnotify", "tesseract", "tesseract-data-eng"],
   "dictation": ["whisper-cpp", "wtype"],
   "nvidia_existing_driver_only": ["nvidia-prime"],
   "optional": {"ollama": ["ollama"], "hyprmod": []},
-  "tested_versions": {"hyprland": ["0.56.2"], "noctalia": ["5.2.0", "5.2.1"], "uwsm": ["0.27.0"]}
+  "login": ["noctalia-greeter", "greetd"],
+  "keyring": ["gnome-keyring", "libsecret"],
+  "tested_versions": {"hyprland": ["0.56.2", "0.57.1"], "noctalia": ["5.2.0", "5.2.1", "5.4.1"], "uwsm": ["0.27.0", "0.27.1"]},
+  "supported_stacks": [
+    {"hyprland": "0.56.2", "noctalia": "5.2.0", "uwsm": "0.27.0"},
+    {"hyprland": "0.56.2", "noctalia": "5.2.1", "uwsm": "0.27.0"},
+    {"hyprland": "0.57.1", "noctalia": "5.4.1", "uwsm": "0.27.1"}
+  ]
 }

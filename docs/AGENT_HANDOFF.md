@@ -30,9 +30,9 @@ Suggested request:
 - Hyprland before/after this Lua API needs a reviewed API/config translation.
 - Noctalia v5 native TOML is not v4 Quickshell. Inspect schema and merged state;
   do not append duplicate sections or replace private service state.
-- The reference laptop's newer compact/MRU Alt+Tab is an opt-in
-  [version-specific profile](ALT_TAB.md), not a change to the generic installer's
-  older baseline. In 5.4.1, Shift+Tab works in the overlay but reverse-opening
+- The current exact desktop combination selects the compact/MRU
+  [version-specific profile](ALT_TAB.md); legacy combinations keep focus-only
+  cycling. In 5.4.1, Shift+Tab works in the overlay but reverse-opening
   IPC is unavailable; do not copy commands from newer docs without checking.
 - Generic/AMD hosts must not get Dell scaling, thermald or Intel PCI constants.
 - NVIDIA-wired external monitors may need a deliberate AC/external profile.
@@ -45,7 +45,8 @@ Suggested request:
 - If adapting an explicitly approved greetd deployment, inspect the existing
   Secret Service provider and PAM stack before addressing keyring prompts.
   [KEYRING.md](KEYRING.md) records the separately authorized reference fix;
-  the installer does not apply it or select greetd automatically. Do not reset
+  the default installer does not apply it or select greetd. The explicit optional
+  login/keyring stage requires additional confirmations. Do not reset
   keyrings or copy private editor runtime files from the reference laptop.
 - Theme changes can collide with GTK CSS symlinks or existing Noctalia fragment
   overrides; preserve originals and inspect effective state before guessing.

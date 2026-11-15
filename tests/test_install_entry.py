@@ -55,6 +55,23 @@ class GuidedEntry(unittest.TestCase):
         result = subprocess.run(["bash", "-n", str(ROOT / "install.sh")], capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
 
+    def test_explicit_login_and_keyring_remain_in_same_reviewed_flow(self):
+        result = self.run_entry('--login', 'noctalia', '--gnome-keyring')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.log.read_text().splitlines(), [
+            'audit', 'plan --login noctalia --gnome-keyring',
+            'apply --packages --download-model --login noctalia --gnome-keyring'])
+
+    def test_keyring_without_login_is_rejected_before_audit(self):
+        result = self.run_entry('--login', 'keep', '--gnome-keyring')
+        self.assertEqual(result.returncode, 2)
+        self.assertFalse(self.log.exists())
+
+    def test_help_does_not_audit_or_mutate(self):
+        result = self.run_entry('--help')
+        self.assertEqual(result.returncode, 0)
+        self.assertFalse(self.log.exists())
+
 
 if __name__ == "__main__":
     unittest.main()

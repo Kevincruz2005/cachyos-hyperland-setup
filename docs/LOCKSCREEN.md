@@ -16,6 +16,12 @@ configuration validation. This reference lock-screen profile is still not
 automatically deployed on either version; its host-specific layout needs review.
 Unsupported targets must use the agent handoff, not bypass the gate or downgrade.
 
+November 15 update: the current 0.57.1/5.4.1/0.27.1 installer path can generate
+this profile from detected target output/resolution and a numeric scale. It
+does not copy the reference eDP connector or absolute coordinates. Unknown/auto
+scale retains the native lock layout for manual review. Legacy paths retain
+their earlier behavior; real authentication remains owner-tested.
+
 ## Adapt safely
 
 1. Read AGENTS.md and back up both Noctalia config and private

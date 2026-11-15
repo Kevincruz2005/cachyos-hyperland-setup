@@ -3,8 +3,10 @@
 Read the safety contract in README and AGENTS.md. Start with an already working
 x86_64 CachyOS installation, a normal user, official repository access, working
 power-profiles-daemon, installed graphics drivers and a retained desktop fallback.
-The automatic adapter currently accepts Hyprland 0.56.2, Noctalia 5.2.0 or
-5.2.1, and UWSM 0.27.0. It does not downgrade, pin packages or force an old version to run.
+The adapter accepts these exact combinations: Hyprland 0.56.2 / Noctalia
+5.2.0 or 5.2.1 / UWSM 0.27.0, and Hyprland 0.57.1 / Noctalia 5.4.1 /
+UWSM 0.27.1. Independently accepted versions cannot be mixed arbitrarily.
+It does not downgrade, pin packages or force an old version to run.
 For other versions/distributions, take the generated handoff to an agent.
 
 ## 1. Audit and review
@@ -15,7 +17,10 @@ a packaged fallback is used.
 The script performs the audit and plan below, then invokes the reviewed
 interactive apply with official packages and the checksummed speech model.
 Read the plan before typing `APPLY`. It stops on unsafe/unsupported hosts and
-does not select SDDM, reboot or remove the existing desktop. For manual staged
+does not select SDDM, reboot or remove the existing desktop. The default keeps
+the working display manager; an interactive terminal offers official Noctalia
+login separately. The explicit equivalent is `--login noctalia`, with optional
+`--gnome-keyring`. Read [OFFICIAL_LOGIN.md](OFFICIAL_LOGIN.md) first. For manual staged
 control, use these commands instead:
 
 ```sh
@@ -73,8 +78,10 @@ If a package's `.INSTALL` script requires review, use the agent handoff; do not
 edit the guard away or substitute an AUR package blindly.
 
 The guided package plan includes CachyOS's `helium-browser-bin`, `kamoso`,
-and English Tesseract OCR packages for the exported browser, camera and
-screenshot features. It does not start a browser or camera service at login.
+`gst-plugins-base`, `mousepad`, and English Tesseract OCR packages. The explicit
+base-codec dependency prevents the missing Vorbis encoder camera failure.
+It uses current compatible repository packages, not the author's archived repair
+versions. It does not start a browser, editor or camera service at login.
 The proposed package transaction must still pass the normal review gate.
 
 User files are prevalidated, originals copied to a private timestamped backup,
@@ -98,7 +105,11 @@ See [SDDM](SDDM.md). Greeter deployment requires a source-compatible Breeze
 installation, a manual preview and `--confirm-greeter-preview`. `--select-sddm`
 additionally selects SDDM for the next boot without stopping the current desktop.
 Both Hyprland (UWSM) and KDE Plasma entries must exist. No automatic reboot,
-logout, reload, lock, suspend, PAM/keyring modification or service restart occurs.
+logout, reload, lock, suspend or service restart occurs in this SDDM step.
+The separate optional `--login noctalia` stage changes next-boot selection to
+greetd only after additional approval. `--gnome-keyring` adds optional hooks
+only after explicit PAM approval and known-layout checks. Neither is implied
+by ordinary desktop installation. See [OFFICIAL_LOGIN.md](OFFICIAL_LOGIN.md).
 
 HyprMod/Ollama are optional, not automatic dependencies; see
 [on-demand applications](ON_DEMAND.md). thermald is a separately reviewed

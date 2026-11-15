@@ -5,8 +5,10 @@ recently used windows first. This profile was reviewed with Hyprland 0.57.1,
 Noctalia 5.4.1 and UWSM 0.27.1. It adds no package, plugin, daemon or polling
 script, and never automatically maximizes or changes window layout.
 
-This is an **optional reference profile**, not enabled by the generic installer.
-Its older tested-version gates and original focus-only Alt+Tab remain unchanged.
+This started as an **optional reference profile**. Since the November 15 update,
+the installer selects it automatically for the exact current desktop combination
+above; legacy combinations retain focus-only Alt+Tab. Its fragments are still
+available for separately reviewed manual use. Version gates remain in place.
 Do not bypass those gates or upgrade/downgrade a working machine merely to apply
 this profile. Review current installed APIs before adapting it elsewhere.
 

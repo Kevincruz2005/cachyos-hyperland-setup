@@ -9,7 +9,7 @@ OPEN THINGS
   Super + E               Dolphin file manager
   Super + B               Helium browser
   Super + W               Brave browser
-  Super + T               Text editor
+  Super + T               Mousepad text editor (no background server)
   Calculator key          Calculator (Super + C also works)
   Super + F1              This cheat sheet
 

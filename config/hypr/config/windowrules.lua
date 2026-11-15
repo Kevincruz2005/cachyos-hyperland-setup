@@ -83,6 +83,29 @@ local modalMatches = {
 }
 for _, m in ipairs(modalMatches) do hl.window_rule({ match = m, float = true }) end
 
+-- Bound file dialogs on scaled displays without changing normal tiled windows.
+local fileDialogMatches = {
+    { title = "^(Open|Open File|Open Files|Save|Save As|Save File|Save File As|Choose File|Choose Files|Select File|Select Files|File Upload|Choose Folder|Select Folder|Select a Folder)$", float = true },
+    { class = "^([Xx]dg-desktop-portal-gtk)$", float = true },
+}
+for i, m in ipairs(fileDialogMatches) do
+    hl.window_rule({
+        name = "file-dialog-fit-" .. i,
+        match = m,
+        center = true,
+        size = { "monitor_w*0.75", "monitor_h*0.75" },
+        max_size = { "monitor_w*0.90", "monitor_h*0.80" },
+        persistent_size = false,
+    })
+end
+hl.window_rule({
+    name = "naming-dialog-fit",
+    match = { title = "^([Rr]ename( File| Folder)?|New Folder|Create Folder)$", float = true },
+    center = true,
+    max_size = { "monitor_w*0.90", "monitor_h*0.80" },
+    persistent_size = false,
+})
+
 -- Floating Kitty terminal (Super + Shift + Enter)
 hl.window_rule({
     match  = { class = "^(kitty-float)$" },

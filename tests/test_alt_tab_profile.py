@@ -23,15 +23,15 @@ class AltTabProfile(unittest.TestCase):
         source = (ROOT / 'profiles/window-switcher/noctalia.toml.example').read_text()
         self.assertEqual(tomllib.loads(source), {'shell': {'window_switcher': {'style': 'compact', 'mru': True}}})
 
-    def test_generic_installer_baseline_unchanged(self):
+    def test_legacy_template_retained_with_current_version_in_manifest(self):
         source = (ROOT / 'config/hypr/config/binds.lua').read_text()
         self.assertIn('hl.bind("ALT + Tab",         hl.dsp.window.cycle_next({ next = true }))', source)
         self.assertNotIn('window-switcher hold', source)
         config = tomllib.loads((ROOT / 'config/noctalia/config.toml').read_text())
         self.assertNotIn('window_switcher', config['shell'])
         versions = json.loads((ROOT / 'packages.json').read_text())['tested_versions']
-        self.assertNotIn('5.4.1', versions['noctalia'])
-        self.assertNotIn('0.57.1', versions['hyprland'])
+        self.assertIn('5.4.1', versions['noctalia'])
+        self.assertIn('0.57.1', versions['hyprland'])
 
     def test_documents_limitations_and_private_recovery(self):
         source = (ROOT / 'docs/ALT_TAB.md').read_text()

@@ -294,6 +294,21 @@ See [ALT_TAB.md](ALT_TAB.md) and its two opt-in profile fragments. The generic
 installer/version gates are unchanged; public copies contain no private backup
 state or machine-specific rollback hashes.
 
+## One-script current-desktop adapter (2026-11-15)
+
+The repository now generates the current exact desktop combination as well as
+the legacy combinations. It includes Mousepad, explicit camera base codecs,
+scoped file-dialog sizing and the current compact/MRU switcher. Native offline
+validation covers generated legacy, generic-current and NVIDIA-current profiles,
+including target-adapted lock geometry where scale is numeric. This is not a
+new privileged install or hardware pass on the author laptop.
+
+The optional official-login/keyring path has separate approval prompts and
+pure transformation tests. Default login is untouched; unknown versions or
+custom layouts stop. A disposable CachyOS VM package/login end-to-end test
+remains outstanding. No camera preview, password login, reboot or suspend is
+triggered by repository tests. See [CURRENT_SETUP.md](CURRENT_SETUP.md).
+
 ## Matched A/B procedure
 
 Use the same brightness, actual refresh rate, power profile, radios, keyboard

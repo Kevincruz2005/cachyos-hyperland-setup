@@ -19,11 +19,12 @@ cd cachyos-hyperland-setup
 ./install.sh
 ```
 
-The script runs audit, shows a plan, then asks you to type `APPLY` before any
+The script offers a login choice, runs audit, shows a plan, then asks you to type `APPLY` before any
 package/configuration changes. Optionally pass `--wallpaper
 /absolute/path/to/your/static-wallpaper.png` to use your own image; the author's
-personal wallpaper is not included. SDDM selection and reboot remain separate
-manual steps. Read [installation](docs/INSTALL.md) before applying anything.
+personal wallpaper is not included. Existing login is preserved by default;
+official Noctalia Greeter/greetd is a separately approved **next-boot** option.
+Reboot is always manual. Read [installation](docs/INSTALL.md) before applying anything.
 CachyOS-first;
 other distributions and untested versions stop with an agent handoff instead
 of executing guessed package commands. Never pipe downloaded scripts into sudo.
@@ -37,6 +38,8 @@ repository visibility.
 - Dark wallpaper-derived GTK/Qt/Kitty colors and Dolphin integration.
 - Adwaita Sans, JetBrainsMono Nerd Font, Bibata cursor and minimal Noctalia bar.
 - Current window/gesture shortcuts, Windows-style show desktop, maximize separate from true fullscreen.
+- Mousepad on Super+T and bounded, centered floating file/naming dialogs.
+- On the reviewed current stack, compact/MRU Alt+Tab with release-Alt selection.
 - Native cursor-following screen zoom up to 10×, with no idle magnifier process.
 - Interactive Print Screen crop/preview/copy/save and on-demand English text OCR, with fractional-scale fixes.
 - Offline English-only phrase dictation, with no idle model/listener and whole-cgroup cleanup.
@@ -45,9 +48,25 @@ repository visibility.
 - Native adaptive lock-screen reference profile, with separately reviewed host-specific layout.
 - Native default/no-photo avatar preference; no personal avatar is redistributed.
 - Helium as the default browser and Super+B target, with Brave on Super+W; Firefox remains available.
-- Kamoso camera on demand, without a new camera-only background service.
+- Kamoso plus its GStreamer base codecs, on demand without a camera-only service.
 - Optional right-click network icon shortcut to the installed KDE profile editor; no bundled network identities.
 - KDE fallback, portals, networking/audio/Bluetooth and optional on-demand local AI.
+
+The current desktop adapter covers **Hyprland 0.57.1 + Noctalia 5.4.1 + UWSM
+0.27.1** as a combination, alongside the older legacy combinations. Unknown or
+mixed versions stop; no pinning/downgrades or unattended OS update is performed.
+See [current coverage and limits](docs/CURRENT_SETUP.md). Account data, private
+backups, wallpaper images and hardware validation are not cloned.
+
+For an explicit full-desktop plus official-login review in the same script:
+
+```sh
+./install.sh --login noctalia --gnome-keyring --wallpaper /absolute/path/to/your-wallpaper.png
+```
+
+These options do not skip approvals. Login/PAM has additional confirmations and
+an exact protected-change preview; the final phrase is `ENABLE NOCTALIA LOGIN`.
+Keeping the existing login is also supported with `./install.sh --login keep`.
 
 Current Dell tuning includes 125% display scaling, zero gaps and black active
 borders. A generic host receives detected display settings rather than eDP-1
@@ -65,7 +84,9 @@ validated hardware setup on every computer.
 | Guide | Purpose |
 | --- | --- |
 | [Features and shortcuts](docs/FEATURES.md) | Everyday behavior |
-| [Optional Windows-style Alt+Tab](docs/ALT_TAB.md) | Native Noctalia 5.4.1 compact/MRU profile and safe rollback |
+| [Windows-style Alt+Tab](docs/ALT_TAB.md) | Version-aware native compact/MRU profile and safe rollback |
+| [Current setup coverage](docs/CURRENT_SETUP.md) | What the one-script installer includes and what still needs review |
+| [Official Noctalia login](docs/OFFICIAL_LOGIN.md) | Explicit next-boot greeter/keyring choices and recovery |
 | [Installation](docs/INSTALL.md) | Staged migration and recovery |
 | [Migration history](docs/HISTORY.md) | Decisions and evidence, not fabricated chat history |
 | [Validation](docs/VALIDATION.md) | Verified results and outstanding hardware checks |
