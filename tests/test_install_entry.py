@@ -1,6 +1,5 @@
 # SPDX-License-Identifier: MIT
 """Exercise the shell entry point against a fake setup in an isolated directory."""
-import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -15,6 +14,24 @@ class GuidedEntry(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.directory = Path(self.temp.name)
+        # The entrypoint checks prerequisites before invoking our fake setup.
+        # Make those checks independent of the host (e.g. Ubuntu CI has no pacman).
+        # Only the shell/path utility are real; prerequisite stubs fail if called.
+        self.bin = self.directory / "bin"
+        self.bin.mkdir()
+        for name in ("bash", "dirname"):
+            executable = shutil.which(name)
+            self.assertIsNotNone(executable, "Test harness needs " + name)
+            (self.bin / name).symlink_to(executable)
+        self.prerequisites = ("python", "pacman", "sudo", "file")
+        for name in self.prerequisites:
+            executable = self.bin / name
+            executable.write_text(
+                "#!/bin/sh\n"
+                "printf '%s\\n' 'Unexpected execution of a prerequisite stub' >&2\n"
+                "exit 97\n"
+            )
+            executable.chmod(0o755)
         shutil.copy2(ROOT / "install.sh", self.directory / "install.sh")
         setup = self.directory / "setup"
         setup.write_text(
@@ -26,11 +43,13 @@ class GuidedEntry(unittest.TestCase):
         self.log = self.directory / "setup.log"
 
     def run_entry(self, *args, fail_plan=False):
-        env = {**os.environ, "TEST_SETUP_LOG": str(self.log)}
+        # Inherit neither the host PATH nor shell startup/functions/failure flags.
+        env = {"PATH": str(self.bin), "TEST_SETUP_LOG": str(self.log), "LC_ALL": "C"}
         if fail_plan:
             env["TEST_FAIL_PLAN"] = "1"
         return subprocess.run(["bash", str(self.directory / "install.sh"), *args],
-                              cwd=self.directory, env=env, capture_output=True, text=True)
+                              cwd=self.directory, env=env, stdin=subprocess.DEVNULL,
+                              capture_output=True, text=True)
 
     def test_guided_audit_plan_apply(self):
         result = self.run_entry("--wallpaper", "/tmp/test-wallpaper.png")
@@ -44,7 +63,29 @@ class GuidedEntry(unittest.TestCase):
     def test_plan_failure_never_applies(self):
         result = self.run_entry(fail_plan=True)
         self.assertEqual(result.returncode, 2)
+        self.assertTrue(self.log.exists(), result.stderr)
         self.assertEqual(self.log.read_text().splitlines(), ["audit", "plan"])
+
+    def test_missing_prerequisites_stop_before_audit(self):
+        for name in self.prerequisites:
+            with self.subTest(prerequisite=name):
+                executable = self.bin / name
+                executable.rename(self.bin / (name + ".unavailable"))
+                try:
+                    result = self.run_entry()
+                    self.assertEqual(result.returncode, 2, result.stderr)
+                    self.assertIn("Missing prerequisite: " + name + ".", result.stderr)
+                    self.assertFalse(self.log.exists())
+                finally:
+                    (self.bin / (name + ".unavailable")).rename(executable)
+
+    def test_help_works_without_install_prerequisites(self):
+        for name in self.prerequisites:
+            (self.bin / name).unlink()
+        result = self.run_entry('--help')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('Usage:', result.stdout)
+        self.assertFalse(self.log.exists())
 
     def test_rejects_unreviewed_flags_before_audit(self):
         result = self.run_entry("--select-sddm")
